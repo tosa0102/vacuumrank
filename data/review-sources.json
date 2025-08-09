@@ -1,0 +1,15 @@
+{
+  "weights": {
+    "amazon_uk": 1.0,
+    "argos": 0.9,
+    "currys": 0.85,
+    "johnlewis": 0.85,
+    "ao": 0.8,
+    "brand_store": 0.7
+  },
+  "confidence": {
+    "target_count": 2000,
+    "min_scale": 0.7,
+    "max_scale": 1.0
+  }
+}
