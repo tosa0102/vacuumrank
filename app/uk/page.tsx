@@ -1,9 +1,9 @@
 
 'use client';
 import { useMemo, useState } from "react";
-import premiumData from "@/data/uk-premium.json";
-import perfData from "@/data/uk-performance.json";
-import budgetData from "@/data/uk-budget.json";
+import premiumData from "../../data/uk-premium.json";
+import perfData from "../../data/uk-performance.json";
+import budgetData from "../../data/uk-budget.json";
 import { ChevronsUpDown, Plus } from "lucide-react";
 
 type Model = {
