@@ -164,5 +164,11 @@ export default function UKPage(){
       <Table data={data} onCompareToggle={toggle} selected={compare}/>
       <Compare models={compare}/>
     </div>
+    <div>
+  <Link href="/uk/best-robot-vacuum-2025" className="btn mt-2">
+    Read: Best Robot Vacuums 2025 (UK)
+  </Link>
+</div>
+
   );
 }
