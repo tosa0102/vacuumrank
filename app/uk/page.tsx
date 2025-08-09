@@ -169,6 +169,10 @@ export default function UKPage(){
     Read: Best Robot Vacuums 2025 (UK)
   </Link>
 </div>
-
+<div>
+  <Link href="/uk/best-robot-vacuum-2025" className="btn">
+    Read: Best Robot Vacuums 2025 (UK)
+  </Link>
+</div>
   );
 }
