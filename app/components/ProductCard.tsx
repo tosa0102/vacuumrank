@@ -2,9 +2,7 @@ import Image from "next/image";
 
 type Retailer = { name: string; url: string; price?: number };
 
-function slugify(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-}
+const isHttp = (s?: string) => !!s && /^https?:\/\//i.test(s || "");
 
 export default function ProductCard({ product }: { product: any }) {
   const name =
@@ -14,23 +12,12 @@ export default function ProductCard({ product }: { product: any }) {
 
   const price = product?.price_gbp ?? product?.price ?? undefined;
 
-import Image from "next/image";
-
-const isHttp = (s?: string) => !!s && /^https?:\/\//i.test(s || "");
-
-...
+  // Bild: extern URL → <img>, annars Next <Image> (t.ex. placeholder eller lokal bild)
+  const placeholder = `https://placehold.co/240x240/png?text=${encodeURIComponent(
+    name.slice(0, 24)
+  )}`;
   const imgSrc: string = product?.image || placeholder;
   const alt = name;
-
-  ...
-  <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-    {isHttp(imgSrc) ? (
-      <img src={imgSrc} alt={alt} className="w-full h-full object-contain" />
-    ) : (
-      <Image src={imgSrc} alt={alt} width={240} height={240} className="w-full h-full object-contain" />
-    )}
-  </div>
-...
 
   // Återförsäljarknappar
   const retailers: Retailer[] = (() => {
@@ -54,13 +41,17 @@ const isHttp = (s?: string) => !!s && /^https?:\/\//i.test(s || "");
     <div className="rounded-xl border p-4 grid gap-3">
       <div className="flex items-start gap-4">
         <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-          <Image
-            src={imgSrc}
-            alt={alt}
-            width={240}
-            height={240}
-            className="w-full h-full object-contain"
-          />
+          {isHttp(imgSrc) ? (
+            <img src={imgSrc} alt={alt} className="w-full h-full object-contain" />
+          ) : (
+            <Image
+              src={imgSrc}
+              alt={alt}
+              width={240}
+              height={240}
+              className="w-full h-full object-contain"
+            />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-semibold leading-snug">{name}</div>
