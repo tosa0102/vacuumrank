@@ -2,7 +2,7 @@
   {
     "brand": "ECOVACS",
     "model": "ECOVACS Deebot T30 Omni",
-    "price_gbp": 499.0,
+    "price_gbp": 499,
     "suction_pa": 20000,
     "mop_type": "roller mop (ZeroTangle 3.0)",
     "dock": "auto-empty/wash/dry/refill",
@@ -13,23 +13,25 @@
     "review_count": null,
     "review_score": null,
     "overall": 8.22,
-    "band": "performance"
+    "band": "performance",
+    "image": "https://m.media-amazon.com/images/I/71Qt2Rfm7BL.jpg"
   },
   {
     "brand": "Dreame",
     "model": "Dreame L10s Ultra Gen 2",
-    "price_gbp": 479.0,
+    "price_gbp": 479,
     "suction_pa": 10000,
     "mop_type": "dual spinning (MopExtend)",
     "dock": "auto-empty/wash/dry/refill",
     "navigation": "LiDAR + AI camera",
     "spec": 5.11,
-    "value": 10.0,
+    "value": 10,
     "review_stars": null,
     "review_count": null,
     "review_score": null,
     "overall": 7.07,
-    "band": "performance"
+    "band": "performance",
+    "image": "https://m.media-amazon.com/images/S/aplus-media-library-service-media/25be2f55-b224-4416-abc5-d2f9e9aa16e2.__CR0,0,200,225_PT0_SX200_V1___.jpg"
   },
   {
     "brand": "Shark",
@@ -45,12 +47,13 @@
     "review_count": null,
     "review_score": null,
     "overall": 6.01,
-    "band": "performance"
+    "band": "performance",
+    "image": "https://m.media-amazon.com/images/I/71Ua+FPZ8oL._UF894,1000_QL80_.jpg"
   },
   {
     "brand": "Roborock",
     "model": "Roborock Q7 Max+",
-    "price_gbp": 499.0,
+    "price_gbp": 499,
     "suction_pa": 4200,
     "mop_type": "vibra mop (pad drag) / or vacuum-only kit",
     "dock": "auto-empty only (dock)",
@@ -61,12 +64,13 @@
     "review_count": null,
     "review_score": null,
     "overall": 5.66,
-    "band": "performance"
+    "band": "performance",
+    "image": "https://m.media-amazon.com/images/I/51t3gkrAAEL._UF894,1000_QL80_.jpg"
   },
   {
     "brand": "ECOVACS",
     "model": "ECOVACS Deebot T50 Pro Omni",
-    "price_gbp": 699.0,
+    "price_gbp": 699,
     "suction_pa": 15000,
     "mop_type": "dual spinning + TruEdge 2.0",
     "dock": "auto-empty/wash/dry/refill",
@@ -77,12 +81,13 @@
     "review_count": null,
     "review_score": null,
     "overall": 5.56,
-    "band": "performance"
+    "band": "performance",
+    "image": "https://m.media-amazon.com/images/I/610I+9D8U6L._UF894,1000_QL80_.jpg"
   },
   {
     "brand": "eufy",
     "model": "eufy X10 Pro Omni",
-    "price_gbp": 699.0,
+    "price_gbp": 699,
     "suction_pa": 8000,
     "mop_type": "dual spinning mop pads",
     "dock": "auto-empty/wash/dry/refill",
@@ -93,7 +98,8 @@
     "review_count": null,
     "review_score": null,
     "overall": 4.75,
-    "band": "performance"
+    "band": "performance",
+    "image": "https://m.media-amazon.com/images/I/612vDNxMmtL.jpg"
   },
   {
     "brand": "Samsung",
@@ -109,12 +115,13 @@
     "review_count": null,
     "review_score": null,
     "overall": 4.73,
-    "band": "performance"
+    "band": "performance",
+    "image": "https://m.media-amazon.com/images/I/41GFADc7JsL._AC_SY200_QL15_.jpg"
   },
   {
     "brand": "Roborock",
     "model": "Roborock Q Revo S",
-    "price_gbp": 699.0,
+    "price_gbp": 699,
     "suction_pa": 7000,
     "mop_type": "dual spinning pads + mop lift",
     "dock": "auto-empty/wash/dry/refill",
@@ -125,12 +132,13 @@
     "review_count": null,
     "review_score": null,
     "overall": 4.59,
-    "band": "performance"
+    "band": "performance",
+    "image": "https://m.media-amazon.com/images/I/61qNJUfsWZL.jpg"
   },
   {
     "brand": "iRobot",
     "model": "iRobot Roomba j7+ (Auto-Empty)",
-    "price_gbp": 899.0,
+    "price_gbp": 899,
     "suction_pa": null,
     "mop_type": "vacuum only (optional mop on i5/j5 Combo)",
     "dock": "auto-empty only",
@@ -141,7 +149,8 @@
     "review_count": null,
     "review_score": null,
     "overall": 2.26,
-    "band": "performance"
+    "band": "performance",
+    "image": "https://m.media-amazon.com/images/I/51ISjXVTKgL.jpg"
   },
   {
     "brand": "Dyson",
@@ -152,11 +161,12 @@
     "dock": "charge dock (no self-clean)",
     "navigation": "ToF sensors + camera",
     "spec": 3.51,
-    "value": 0.0,
+    "value": 0,
     "review_stars": null,
     "review_count": null,
     "review_score": null,
     "overall": 2.11,
-    "band": "performance"
+    "band": "performance",
+    "image": "https://m.media-amazon.com/images/I/710K-kjrzqL.jpg"
   }
 ]
