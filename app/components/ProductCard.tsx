@@ -14,12 +14,23 @@ export default function ProductCard({ product }: { product: any }) {
 
   const price = product?.price_gbp ?? product?.price ?? undefined;
 
-  // Bild: 1) använd product.image om den finns  2) annars placeholder med text
-  const placeholder = `https://placehold.co/240x240/png?text=${encodeURIComponent(
-    name.slice(0, 24)
-  )}`;
+import Image from "next/image";
+
+const isHttp = (s?: string) => !!s && /^https?:\/\//i.test(s || "");
+
+...
   const imgSrc: string = product?.image || placeholder;
   const alt = name;
+
+  ...
+  <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+    {isHttp(imgSrc) ? (
+      <img src={imgSrc} alt={alt} className="w-full h-full object-contain" />
+    ) : (
+      <Image src={imgSrc} alt={alt} width={240} height={240} className="w-full h-full object-contain" />
+    )}
+  </div>
+...
 
   // Återförsäljarknappar
   const retailers: Retailer[] = (() => {
