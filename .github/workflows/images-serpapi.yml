@@ -1,6 +1,9 @@
 name: Fetch product images (SerpAPI)
 on:
   workflow_dispatch: {}
+permissions:
+  contents: write
+  pull-requests: write
 jobs:
   fetch:
     runs-on: ubuntu-latest
@@ -13,10 +16,12 @@ jobs:
       - run: npm run images:serp
         env:
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
-      - name: Commit & push changes
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "Update product image URLs via SerpAPI" || echo "No changes"
-          git push
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "Update product image URLs via SerpAPI"
+          branch: serpapi/image-updates
+          title: "Update product images via SerpAPI"
+          body: "Adds/updates external image URLs in data/*.json"
+          add-paths: |
+            data/*.json
