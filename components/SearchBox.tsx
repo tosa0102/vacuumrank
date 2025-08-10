@@ -4,12 +4,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const SUGGESTIONS = [
-  { title: "Robot vacuums (UK)", href: "/uk/robot-vacuums" },
-  { title: "Cordless vacuums (UK)", href: "/uk/cordless-vacuums" },
-  { title: "Dishwashers (UK)", href: "/uk/dishwashers" },
-  { title: "Robot lawn mowers (UK)", href: "/uk/robot-lawn-mowers" },
-  { title: "Soundbars (UK)", href: "/uk/soundbars" },
-  { title: "UK robot vacuum guide", href: "/uk/best-robot-vacuum-2025" },
+  { title: "Robot vacuums", href: "/uk/robot-vacuums" },
+  { title: "Cordless vacuums", href: "/uk/cordless-vacuums" },
+  { title: "Dishwashers", href: "/uk/dishwashers" },
+  { title: "Robot lawn mowers", href: "/uk/robot-lawn-mowers" },
+  { title: "Soundbars", href: "/uk/soundbars" },
+  { title: "Robot vacuum guide", href: "/uk/best-robot-vacuum-2025" },
 ];
 
 export default function SearchBox() {
