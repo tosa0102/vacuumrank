@@ -15,7 +15,6 @@ export default function Page() {
     { href: "/uk/dishwashers", title: "Dishwashers", subtitle: "Quiet, efficient, third rack", Icon: Home },
     { href: "/uk/robot-lawn-mowers", title: "Robot lawn mowers", subtitle: "Wire vs RTK, slope, area", Icon: Sprout },
     { href: "/uk/soundbars", title: "Soundbars", subtitle: "Dolby Atmos, eARC, room correction", Icon: Tv },
-    // Extras
     { href: "/uk", title: "All UK rankings", subtitle: "See the UK index", Icon: Cpu },
     { href: "/uk/best-robot-vacuum-2025", title: "UK robot vacuum guide", subtitle: "Our full best-in-test write-up", Icon: Smartphone },
   ];
