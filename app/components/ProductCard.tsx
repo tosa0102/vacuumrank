@@ -44,10 +44,10 @@ export default function ProductCard({ product }: { product: any }) {
           {price ? <div className="text-gray-600 text-sm mt-1">~£{price}</div> : null}
           <ul className="text-sm text-gray-600 grid gap-1 mt-2">
             {product?.suction_pa ? <li>• Suction: {product.suction_pa} Pa</li> : null}
-            {product?.mop_type ? <li>• Mop: {product.mop_type}</li> : null}
-            {product?.dock ? <li>• Dock: {product.dock}</li> : null}
-            {product?.navigation ? <li>• Navigation: {product.navigation}</li> : null}
-            {product?.edge_tools ? <li>• Edge tools: {product.edge_tools}</li> : null}
+            {product?.mop_type ? <li>• Mop: {product?.mop_type}</li> : null}
+            {product?.dock ? <li>• Dock: {product?.dock}</li> : null}
+            {product?.navigation ? <li>• Navigation: {product?.navigation}</li> : null}
+            {product?.edge_tools ? <li>• Edge tools: {product?.edge_tools}</li> : null}
           </ul>
         </div>
       </div>
