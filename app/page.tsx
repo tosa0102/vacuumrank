@@ -1,17 +1,57 @@
-
 import Link from "next/link";
+import CategoryCard from "../components/CategoryCard";
+import SearchBox from "../components/SearchBox";
+import { Home, Sprout, Cpu, Smartphone, Tv } from "lucide-react";
+
+export const metadata = {
+  title: "RankPilot — Expert product rankings by country",
+  description: "Best-in-test style rankings with local pricing and availability. Start with the UK.",
+};
+
 export default function Page() {
+  const cats = [
+    { href: "/uk/robot-vacuums", title: "Robot vacuums", subtitle: "Premium • Performance • Budget", Icon: Home },
+    { href: "/uk/cordless-vacuums", title: "Cordless vacuums", subtitle: "Dyson, Shark, Samsung and more", Icon: Home },
+    { href: "/uk/dishwashers", title: "Dishwashers", subtitle: "Quiet, efficient, third rack", Icon: Home },
+    { href: "/uk/robot-lawn-mowers", title: "Robot lawn mowers", subtitle: "Wire vs RTK, slope, area", Icon: Sprout },
+    { href: "/uk/soundbars", title: "Soundbars", subtitle: "Dolby Atmos, eARC, room correction", Icon: Tv },
+    // Extras
+    { href: "/uk", title: "All UK rankings", subtitle: "See the UK index", Icon: Cpu },
+    { href: "/uk/best-robot-vacuum-2025", title: "UK robot vacuum guide", subtitle: "Our full best-in-test write-up", Icon: Smartphone },
+  ];
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": cats.map((c, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "url": c.href,
+      "name": c.title
+    }))
+  };
+
   return (
-    <div className="grid gap-6">
-      <h1 className="text-3xl font-bold">Best Robot Vacuums by Country</h1>
-      <p className="text-gray-600">We combine live street pricing, feature scoring, and verified reviews — updated monthly.</p>
-      <div className="grid sm:grid-cols-2 gap-4">
-        <Link href="/uk" className="card p-6 hover:shadow-md transition">
-          <div className="text-sm uppercase text-gray-500">Start here</div>
-          <div className="text-xl font-semibold">United Kingdom</div>
-          <div className="mt-2 text-gray-600">Premium • Performance • Budget</div>
-        </Link>
-      </div>
+    <div className="grid gap-8">
+      {/* Hero */}
+      <section className="text-center grid gap-4">
+        <h1 className="text-3xl font-bold">Find the best products — ranked for your country</h1>
+        <p className="text-gray-600">We combine live street pricing, features, and verified reviews. Start with the UK.</p>
+        <div className="mx-auto"><SearchBox /></div>
+      </section>
+
+      {/* Categories */}
+      <section className="grid gap-4">
+        <h2 className="text-2xl font-semibold">Browse categories</h2>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {cats.map((c, i) => (<CategoryCard key={i} {...c} />))}
+        </div>
+      </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
     </div>
   );
 }
