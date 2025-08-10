@@ -4,8 +4,8 @@ import SearchBox from "../components/SearchBox";
 import { Home, Sprout, Cpu, Smartphone, Tv } from "lucide-react";
 
 export const metadata = {
-  title: "RankPilot — Expert product rankings by country",
-  description: "Best-in-test style rankings with local pricing and availability. Start with the UK.",
+  title: "RankPilot — Expert product rankings",
+  description: "Best-in-test style rankings with local pricing and availability.",
 };
 
 export default function Page() {
@@ -15,8 +15,8 @@ export default function Page() {
     { href: "/uk/dishwashers", title: "Dishwashers", subtitle: "Quiet, efficient, third rack", Icon: Home },
     { href: "/uk/robot-lawn-mowers", title: "Robot lawn mowers", subtitle: "Wire vs RTK, slope, area", Icon: Sprout },
     { href: "/uk/soundbars", title: "Soundbars", subtitle: "Dolby Atmos, eARC, room correction", Icon: Tv },
-    { href: "/uk", title: "All UK rankings", subtitle: "See the UK index", Icon: Cpu },
-    { href: "/uk/best-robot-vacuum-2025", title: "UK robot vacuum guide", subtitle: "Our full best-in-test write-up", Icon: Smartphone },
+    { href: "/uk", title: "All rankings", subtitle: "See the index", Icon: Cpu },
+    { href: "/uk/best-robot-vacuum-2025", title: "Robot vacuum guide", subtitle: "Our full best-in-test write-up", Icon: Smartphone },
   ];
 
   const jsonLd = {
@@ -34,8 +34,8 @@ export default function Page() {
     <div className="grid gap-8">
       {/* Hero */}
       <section className="text-center grid gap-4">
-        <h1 className="text-3xl font-bold">Find the best products — ranked for your country</h1>
-        <p className="text-gray-600">We combine live street pricing, features, and verified reviews. Start with the UK.</p>
+        <h1 className="text-3xl font-bold">Find the best products — ranked for your needs</h1>
+        <p className="text-gray-600">We combine live street pricing, features, and verified reviews.</p>
         <div className="mx-auto"><SearchBox /></div>
       </section>
 
