@@ -1,3 +1,5 @@
+"use client";
+
 import { withAffiliate, amazonSearchFallback } from "../lib/affiliate";
 
 type Retailer = { name: string; url: string; price?: number };
@@ -21,12 +23,10 @@ export default function ProductCard({ product }: { product: any }) {
 
   const retailers: Retailer[] = (() => {
     try {
-      if (Array.isArray(product?.affiliate_retailers))
-        return product.affiliate_retailers;
+      if (Array.isArray(product?.affiliate_retailers)) return product.affiliate_retailers;
       if (typeof product?.affiliate_retailers_json === "string")
         return JSON.parse(product.affiliate_retailers_json);
-      if (Array.isArray(product?.affiliate_retailers_json))
-        return product?.affiliate_retailers_json;
+      if (Array.isArray(product?.affiliate_retailers_json)) return product?.affiliate_retailers_json;
       return [];
     } catch {
       return [];
