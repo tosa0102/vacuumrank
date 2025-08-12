@@ -15,31 +15,47 @@ export default function ProductCard({ product }: { product: any }) {
   const placeholder = `https://placehold.co/240x240/png?text=${encodeURIComponent(
     name.slice(0, 24)
   )}`;
-  const imgSrc: string = product?.image || placeholder;
+  const imgSrc: string =
+    product?.image && isHttp(product.image) ? product.image : placeholder;
   const alt = name;
 
   const retailers: Retailer[] = (() => {
     try {
-      if (Array.isArray(product?.affiliate_retailers)) return product.affiliate_retailers;
+      if (Array.isArray(product?.affiliate_retailers))
+        return product.affiliate_retailers;
       if (typeof product?.affiliate_retailers_json === "string")
         return JSON.parse(product.affiliate_retailers_json);
-      if (Array.isArray(product?.affiliate_retailers_json)) return product.affiliate_retailers_json;
+      if (Array.isArray(product?.affiliate_retailers_json))
+        return product?.affiliate_retailers_json;
       return [];
     } catch {
       return [];
     }
   })();
 
-  const buttons = (retailers.length ? retailers : [
-    { name: "Amazon", url: "#" },
-    { name: "Brand store", url: "#" }
-  ]).slice(0, 3);
+  const buttons: Retailer[] = (
+    retailers.length
+      ? retailers
+      : [
+          { name: "Amazon", url: amazonSearchFallback(name) },
+          { name: "Brand store", url: "#" },
+        ]
+  ).slice(0, 3);
 
   return (
     <div className="rounded-xl border p-4 grid gap-3">
       <div className="flex items-start gap-4">
         <div className="w-24 h-24 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
-          <img src={imgSrc} alt={alt} className="w-full h-full object-contain" />
+          <img
+            src={imgSrc}
+            alt={alt}
+            className="w-full h-full object-contain"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src = placeholder;
+            }}
+          />
         </div>
         <div className="flex-1 min-w-0">
           <div className="font-semibold leading-snug">{name}</div>
@@ -54,22 +70,22 @@ export default function ProductCard({ product }: { product: any }) {
         </div>
       </div>
 
-<div className="flex flex-wrap gap-2">
-  {buttons.map((r, i) => {
-    const finalUrl = withAffiliate(r?.url || amazonSearchFallback(name));
-    return (
-      <a
-        key={i}
-        href={finalUrl}
-        target="_blank"
-        rel="nofollow sponsored noopener noreferrer"
-        className="rounded-lg border px-3 py-2 text-sm font-medium hover:bg-gray-50"
-      >
-        Buy at {r.name}
-      </a>
-    );
-  })}
-</div>
-
+      <div className="flex flex-wrap gap-2">
+        {buttons.map((r, i) => {
+          const finalUrl = withAffiliate(r?.url || amazonSearchFallback(name));
+          return (
+            <a
+              key={i}
+              href={finalUrl}
+              target="_blank"
+              rel="nofollow sponsored noopener noreferrer"
+              className="rounded-lg border px-3 py-2 text-sm font-medium hover:bg-gray-50"
+            >
+              Buy at {r.name}
+            </a>
+          );
+        })}
+      </div>
+    </div>
   );
 }
