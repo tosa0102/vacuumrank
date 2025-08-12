@@ -1,3 +1,5 @@
+import { withAffiliate, amazonSearchFallback } from "../lib/affiliate";
+
 type Retailer = { name: string; url: string; price?: number };
 
 const isHttp = (s?: string) => !!s && /^https?:\/\//i.test(s || "");
@@ -52,19 +54,22 @@ export default function ProductCard({ product }: { product: any }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {buttons.map((r, i) => (
-          <a
-            key={i}
-            href={r.url}
-            target="_blank"
-            rel="nofollow sponsored"
-            className="rounded-lg border px-3 py-2 text-sm font-medium hover:bg-gray-50"
-          >
-            Buy at {r.name}
-          </a>
-        ))}
-      </div>
-    </div>
+<div className="flex flex-wrap gap-2">
+  {buttons.map((r, i) => {
+    const finalUrl = withAffiliate(r?.url || amazonSearchFallback(name));
+    return (
+      <a
+        key={i}
+        href={finalUrl}
+        target="_blank"
+        rel="nofollow sponsored noopener noreferrer"
+        className="rounded-lg border px-3 py-2 text-sm font-medium hover:bg-gray-50"
+      >
+        Buy at {r.name}
+      </a>
+    );
+  })}
+</div>
+
   );
 }
