@@ -8,17 +8,18 @@
     "dock": "charge dock",
     "navigation": "Bounce + sensors",
     "spec": 2.32,
-    "value": 10.0,
+    "value": 10,
     "review_stars": null,
     "review_count": null,
     "review_score": null,
     "overall": 5.39,
-    "band": "budget"
+    "band": "budget",
+    "image": "https://m.media-amazon.com/images/I/61fuj+nccVL._UF894,1000_QL80_.jpg"
   },
   {
     "brand": "Proscenic",
     "model": "Proscenic 850T",
-    "price_gbp": 138.0,
+    "price_gbp": 138,
     "suction_pa": 3000,
     "mop_type": "mop pad (drag)",
     "dock": "charge dock",
@@ -29,12 +30,13 @@
     "review_count": null,
     "review_score": null,
     "overall": 4.84,
-    "band": "budget"
+    "band": "budget",
+    "image": "https://m.media-amazon.com/images/I/81sFNvg46XL._UF894,1000_QL80_.jpg"
   },
   {
     "brand": "TP-Link Tapo",
     "model": "Tapo RV10 Lite",
-    "price_gbp": 169.0,
+    "price_gbp": 169,
     "suction_pa": 2000,
     "mop_type": "vacuum only",
     "dock": "charge dock",
@@ -45,7 +47,8 @@
     "review_count": null,
     "review_score": null,
     "overall": 4.15,
-    "band": "budget"
+    "band": "budget",
+    "image": "https://static.tp-link.com/upload/image-line/RV10_Lite_01_normal_20230207082445r.jpg"
   },
   {
     "brand": "eufy",
@@ -61,7 +64,8 @@
     "review_count": null,
     "review_score": null,
     "overall": 3.98,
-    "band": "budget"
+    "band": "budget",
+    "image": "https://m.media-amazon.com/images/I/61J+uFmV5aL.jpg"
   },
   {
     "brand": "Roborock",
@@ -77,7 +81,8 @@
     "review_count": null,
     "review_score": null,
     "overall": 3.32,
-    "band": "budget"
+    "band": "budget",
+    "image": "https://m.media-amazon.com/images/I/51ueKj89YaL._UF894,1000_QL80_.jpg"
   },
   {
     "brand": "TP-Link Tapo",
@@ -93,12 +98,13 @@
     "review_count": null,
     "review_score": null,
     "overall": 3.07,
-    "band": "budget"
+    "band": "budget",
+    "image": "https://static.tp-link.com/upload/image-line/01_large_20240808023803n.jpg"
   },
   {
     "brand": "eufy",
     "model": "eufy L60 Hybrid + Self-Empty",
-    "price_gbp": 299.0,
+    "price_gbp": 299,
     "suction_pa": 5000,
     "mop_type": "mop pad (drag)",
     "dock": "auto-empty dock",
@@ -109,7 +115,8 @@
     "review_count": null,
     "review_score": null,
     "overall": 2.71,
-    "band": "budget"
+    "band": "budget",
+    "image": "https://m.media-amazon.com/images/I/61GjHWR9MrL.jpg"
   },
   {
     "brand": "eufy",
@@ -125,22 +132,24 @@
     "review_count": null,
     "review_score": null,
     "overall": 1.97,
-    "band": "budget"
+    "band": "budget",
+    "image": "https://m.media-amazon.com/images/I/61mpilXNmBL._UF894,1000_QL80_.jpg"
   },
   {
     "brand": "TP-Link Tapo",
     "model": "Tapo RV10 Plus",
-    "price_gbp": 349.0,
+    "price_gbp": 349,
     "suction_pa": 2000,
     "mop_type": "mop pad (drag)",
     "dock": "auto-empty dock",
     "navigation": "Gyro + sensors",
     "spec": 2.59,
-    "value": 0.0,
+    "value": 0,
     "review_stars": null,
     "review_count": null,
     "review_score": null,
     "overall": 1.55,
-    "band": "budget"
+    "band": "budget",
+    "image": "https://static.tp-link.com/upload/image-line/overview_01_large_20230207082126x.jpg"
   }
 ]

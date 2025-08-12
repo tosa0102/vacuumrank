@@ -2,24 +2,25 @@
   {
     "brand": "ECOVACS",
     "model": "Deebot X8 Pro Omni",
-    "price_gbp": 999.0,
+    "price_gbp": 999,
     "suction_pa": 18000,
     "mop_type": "roller mop (OZMO ROLLER)",
     "dock": "Auto-empty, hot-water wash, heated dry, auto-detergent",
     "edge_tools": true,
     "navigation": "LiDAR + 3D sensors/camera",
     "spec": 9.25,
-    "value": 10.0,
+    "value": 10,
     "review_stars": 4.4,
     "review_count": 1968,
     "review_score": 8.79,
     "overall": 9.14,
-    "band": "premium"
+    "band": "premium",
+    "image": "https://m.media-amazon.com/images/I/51riIg7rjlL._UF894,1000_QL80_.jpg"
   },
   {
     "brand": "Dreame",
     "model": "X50 Ultra",
-    "price_gbp": 1199.0,
+    "price_gbp": 1199,
     "suction_pa": 20000,
     "mop_type": "dual spinning pads (MopExtend)",
     "dock": "Auto-empty, hot-water wash, heated dry, auto-refill",
@@ -31,7 +32,8 @@
     "review_count": 816,
     "review_score": 8.3,
     "overall": 8.73,
-    "band": "premium"
+    "band": "premium",
+    "image": "https://m.media-amazon.com/images/I/61fnYyo6JgL.jpg"
   },
   {
     "brand": "Roborock",
@@ -48,29 +50,31 @@
     "review_count": 2505,
     "review_score": 8.6,
     "overall": 7.89,
-    "band": "premium"
+    "band": "premium",
+    "image": "https://m.media-amazon.com/images/I/61WjUu6shdL.jpg"
   },
   {
     "brand": "Roborock",
     "model": "Saros Z70",
-    "price_gbp": 1799.0,
+    "price_gbp": 1799,
     "suction_pa": 22000,
     "mop_type": "vibrating pad",
     "dock": "Auto-empty, wash, heated dry, auto-refill",
     "edge_tools": true,
     "navigation": "LiDAR + AI camera",
     "spec": 9.4,
-    "value": 0.0,
+    "value": 0,
     "review_stars": 4.4,
     "review_count": 125,
     "review_score": 7.84,
     "overall": 7.84,
-    "band": "premium"
+    "band": "premium",
+    "image": "https://m.media-amazon.com/images/I/61upa2jhrLL.jpg"
   },
   {
     "brand": "eufy",
     "model": "Omni S1 Pro",
-    "price_gbp": 1299.0,
+    "price_gbp": 1299,
     "suction_pa": 8000,
     "mop_type": "long roller mop (HydroJet)",
     "dock": "Auto-empty, hot-water wash, heated dry, auto-refill",
@@ -82,7 +86,8 @@
     "review_count": 2302,
     "review_score": 8.6,
     "overall": 7.61,
-    "band": "premium"
+    "band": "premium",
+    "image": "https://m.media-amazon.com/images/S/aplus-media-library-service-media/d6930fd5-842d-413c-bcbb-0b585c926593.__AC_SR166,182___.jpg"
   },
   {
     "brand": "Roborock",
@@ -99,29 +104,31 @@
     "review_count": 720,
     "review_score": 8.06,
     "overall": 7.19,
-    "band": "premium"
+    "band": "premium",
+    "image": "https://m.media-amazon.com/images/I/61DvTl3xxbL.jpg"
   },
   {
     "brand": "ECOVACS",
     "model": "Deebot X5 Pro Omni",
-    "price_gbp": 1399.0,
+    "price_gbp": 1399,
     "suction_pa": 12800,
     "mop_type": "dual spinning pads",
     "dock": "Auto-empty, temp-controlled wash, heated dry, auto-refill",
     "edge_tools": true,
     "navigation": "LiDAR + AI camera",
     "spec": 7.97,
-    "value": 5.0,
+    "value": 5,
     "review_stars": 3.4,
     "review_count": 136,
     "review_score": 6.08,
     "overall": 6.92,
-    "band": "premium"
+    "band": "premium",
+    "image": "https://m.media-amazon.com/images/I/61k1ogAhBML._AC_SY200_QL15_.jpg"
   },
   {
     "brand": "iRobot",
     "model": "Roomba Combo 10 Max + AutoWash Dock",
-    "price_gbp": 1499.0,
+    "price_gbp": 1499,
     "suction_pa": null,
     "mop_type": "single pad (SmartScrub)",
     "dock": "Auto-empty, pad washing, auto-refill",
@@ -133,12 +140,13 @@
     "review_count": 160,
     "review_score": 5.58,
     "overall": 6.91,
-    "band": "premium"
+    "band": "premium",
+    "image": "https://m.media-amazon.com/images/I/71+y6cbZJfL.jpg"
   },
   {
     "brand": "SwitchBot",
     "model": "S10 (dual-station)",
-    "price_gbp": 1099.0,
+    "price_gbp": 1099,
     "suction_pa": 6500,
     "mop_type": "roller mop",
     "dock": "Auto-empty, hot-water wash, heated dry, auto-refill/drain (plumbed)",
@@ -150,7 +158,8 @@
     "review_count": 226,
     "review_score": 6.22,
     "overall": 6.76,
-    "band": "premium"
+    "band": "premium",
+    "image": "https://m.media-amazon.com/images/I/61cUl+KZEsL.jpg"
   },
   {
     "brand": "ECOVACS",
@@ -162,11 +171,12 @@
     "edge_tools": false,
     "navigation": "LiDAR + AI camera",
     "spec": 6.77,
-    "value": 6.0,
+    "value": 6,
     "review_stars": 3.7,
     "review_count": 58,
     "review_score": 6.37,
     "overall": 6.53,
-    "band": "premium"
+    "band": "premium",
+    "image": "https://m.media-amazon.com/images/I/51EIBqJoTkL.jpg"
   }
 ]
