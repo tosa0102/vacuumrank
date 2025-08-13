@@ -1,11 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "placehold.co" }, // våra placeholders
-    ],
+  async redirects() {
+    return [
+      { source: '/uk/robot-vacuums', destination: '/robot-vacuums', permanent: true },
+    ];
   },
 };
-
 export default nextConfig;
