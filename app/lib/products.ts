@@ -8,11 +8,10 @@ export type Product = {
   scores: Scores; image?: string; affiliate_retailers?: Retailer[];
 };
 
-export async function getProducts(market: 'uk'|'us'|'se'): Promise<Product[]> {
-  try {
-    const mod = await import(`@/data/${market}/robot-vacuums.json`);
-    return (mod.default ?? []) as Product[];
-  } catch {
+export async function getProducts(market: string | { market: string } = "uk") {
+  const m = typeof market === "string" ? market : market?.market ?? "uk";
+   return { premium, performance, budget };
+} catch {
     // fallback till äldre datafiler (om de finns kvar)
     try {
       const [prem, perf, bud] = await Promise.all([
