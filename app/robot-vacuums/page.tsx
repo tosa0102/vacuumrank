@@ -6,7 +6,6 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { getProducts } from "@/app/lib/products";
-import RobotVacuumsHero from "@/app/components/RobotVacuumsHero";
 
 // Client-only compare widgets (unchanged for lower sections)
 const CompareInline = dynamic(() => import("@/app/components/CompareInline"), { ssr: false });
@@ -15,15 +14,18 @@ const CompareBar = dynamic(() => import("@/app/components/CompareBar"), { ssr: f
 export const metadata: Metadata = {
   title: "Best Robot Vacuums — Ranked & Compared",
   description:
-    "Independent rankings of the best robot vacuums across Premium, Performance, and Budget bands — with side‑by‑side comparison.",
+    "Independent rankings of the best robot vacuums across Premium, Performance, and Budget bands — with side-by-side comparison.",
   alternates: { canonical: "/robot-vacuums" },
 };
 
 // ——— CONFIG used in the header (can be moved to a CMS later) ———
-<RobotVacuumsHero />
 const CTA_TEXT = "Read: Best Robot Vacuums 2025 (UK)"; // pill button text in the screenshot
 const CTA_HREF = "/best-robot-vacuum-2025"; // adjust if you have a different URL
-const LOGO_SRC = "/logo-rankpilot.svg"; // replace with your actual logo asset or remote URL
+const LOGO_SRC = "/rankpilot-logo.jpg"; // your provided logo in /public
+const HERO_DATE = new Intl.DateTimeFormat("en-GB", {
+  month: "long",
+  year: "numeric",
+}).format(new Date());
 
 // ——— TOP SECTION (as in your screenshot) ———
 function HeaderFromDesign() {
@@ -33,9 +35,7 @@ function HeaderFromDesign() {
       <div className="grid items-center gap-4 md:grid-cols-12">
         {/* Logo + wordmark (left) */}
         <div className="md:col-span-3 flex items-center gap-3">
-          {/* If no local logo exists yet, this renders an empty placeholder box */}
           <div className="relative h-14 w-14 overflow-hidden rounded-full border border-slate-200 bg-white">
-            {/* Swap to your real logo path or remote URL */}
             <Image src={LOGO_SRC} alt="RankPilot" fill className="object-contain p-1" sizes="56px" />
           </div>
           <div className="text-2xl font-semibold tracking-tight text-slate-900">RankPilot</div>
@@ -49,7 +49,7 @@ function HeaderFromDesign() {
           <p className="mt-1 text-sm text-slate-600 md:text-base">
             <span className="font-medium">Premium</span> • <span className="font-medium">Performance</span> • <span className="font-medium">Budget</span>
             <span className="mx-2">—</span>
-            desk‑tested and ranked
+            desk-tested and ranked
           </p>
           <div className="mt-3 flex justify-center">
             <a
