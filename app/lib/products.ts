@@ -58,7 +58,7 @@ function mapOne(x: Raw): Prod {
 export async function getProducts(market: string | { market: string } = "uk") {
   const _m = typeof market === "string" ? market : market?.market ?? "uk";
   // Byt till var din data faktiskt ligger
-  const raw = await import("./data.json");
+  const raw = await import("@/app/lib/data.json");
   const pick = (arr: any[]) => (arr ?? []).map(mapOne);
 
   return {
