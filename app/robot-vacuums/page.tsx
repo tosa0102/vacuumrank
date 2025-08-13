@@ -1,8 +1,13 @@
+// app/robot-vacuums/page.tsx — FULL REPLACEMENT (aligned with normalized getProducts)
+// Flow: Hero → TL;DR winners → Premium/Performance/Budget lists → Compare (same page)
+// Notes:
+// - Assumes you've replaced app/lib/products.ts with the normalizing version (getProducts() no-arg OK).
+// - CompareInline/CompareBar are client-only and loaded dynamically (SSR disabled).
+// - Anchors: #top, #winners, #premium, #performance, #budget, #compare.
+
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-
-// If your lib path is different, adjust to: "@/lib/products" or similar
 import { getProducts } from "@/app/lib/products";
 
 // Client-only compare widgets
@@ -16,10 +21,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/robot-vacuums" },
 };
 
-// ——— Helpers ———
+// ——— UI helpers ———
 function ScorePill({ label, value }: { label: string; value?: number | string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium text-slate-700 border-slate-200 bg-white/70">
+    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-xs font-medium text-slate-700">
       <span className="text-[10px] uppercase tracking-wide text-slate-500">{label}</span>
       <span>{value ?? "–"}</span>
     </span>
@@ -43,20 +48,16 @@ function RankBadge({ n }: { n: number }) {
   ];
   const cls = n <= 3 ? palette[n - 1] : "bg-slate-200 text-slate-800";
   return (
-    <div className={`h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold grid ${cls}`}>#{n}</div>
+    <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold ${cls}`}>#{n}</div>
   );
 }
 
-// Safe image wrapper (remote images only per next.config images.remotePatterns)
 function ProductImage({ src, alt }: { src?: string; alt: string }) {
   if (!src) {
-    return (
-      <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200/60" />
-    );
+    return <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-slate-100 ring-1 ring-slate-200/60" />;
   }
   return (
-    <div className="relative h-28 w-28 overflow-hidden rounded-xl ring-1 ring-slate-200/60 bg-white">
-      {/* "fill" layout keeps card sizes consistent */}
+    <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/60">
       <Image src={src} alt={alt} fill className="object-contain p-2" sizes="112px" />
     </div>
   );
@@ -64,15 +65,12 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
 
 function Hero() {
   return (
-    <section className="mx-auto max-w-6xl px-4 pt-8 pb-6 md:pt-12 md:pb-8">
+    <section id="top" className="mx-auto max-w-6xl px-4 pt-8 pb-6 md:pt-12 md:pb-8">
       <div className="grid items-center gap-6 md:grid-cols-12">
         <div className="md:col-span-7">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
-            Best Robot Vacuums in the UK
-          </h1>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">Best Robot Vacuums in the UK</h1>
           <p className="mt-3 text-slate-600 md:text-lg">
-            Our lab‑weighted rankings for 2025, split by price band. Clear winners, transparent scoring, and a
-            built‑in compare table.
+            Our lab‑weighted rankings for 2025, split by price band. Clear winners, transparent scoring, and a built‑in compare table.
           </p>
           <div className="mt-4 flex flex-wrap gap-2 text-sm">
             <a href="#winners" className="rounded-full border border-slate-300 bg-white px-4 py-2 font-medium text-slate-800 hover:bg-slate-50">
@@ -98,6 +96,20 @@ function Hero() {
   );
 }
 
+function QuickNav() {
+  return (
+    <nav className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <div className="mx-auto flex max-w-6xl items-center gap-3 overflow-x-auto px-4 py-2 text-sm">
+        <a href="#winners" className="rounded-full px-3 py-1 font-medium text-slate-700 hover:bg-slate-100">Winners</a>
+        <a href="#premium" className="rounded-full px-3 py-1 font-medium text-slate-700 hover:bg-slate-100">Premium</a>
+        <a href="#performance" className="rounded-full px-3 py-1 font-medium text-slate-700 hover:bg-slate-100">Performance</a>
+        <a href="#budget" className="rounded-full px-3 py-1 font-medium text-slate-700 hover:bg-slate-100">Budget</a>
+        <a href="#compare" className="ml-auto rounded-full bg-slate-900 px-3 py-1 font-semibold text-white hover:bg-black">Compare</a>
+      </div>
+    </nav>
+  );
+}
+
 function TLDRWinners({ winners }: { winners: any[] }) {
   return (
     <section id="winners" className="mx-auto max-w-6xl px-4 pt-2 pb-6 md:pb-8">
@@ -105,7 +117,7 @@ function TLDRWinners({ winners }: { winners: any[] }) {
       <p className="mt-1 text-sm text-slate-600">Premium • Performance • Budget</p>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
         {winners.map((p, i) => (
-          <article key={p.id ?? i} className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow">
+          <article key={p.id ?? i} className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="flex items-center gap-4">
               <RankBadge n={i + 1} />
               <div className="min-w-0">
@@ -125,10 +137,7 @@ function TLDRWinners({ winners }: { winners: any[] }) {
               <span className="font-semibold text-slate-900">{p.price ?? "—"}</span>
             </div>
             <div className="mt-3">
-              <a
-                href={p.buyUrl ?? "#"}
-                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
-              >
+              <a href={p.buyUrl ?? "#"} className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black">
                 Buy
               </a>
             </div>
@@ -156,7 +165,7 @@ function BandList({ title, items, anchor }: { title: string; items: any[]; ancho
               <RankBadge n={idx + 1} />
               <ProductImage src={p.image} alt={p.name ?? "Robot vacuum"} />
               <div className="grid w-full gap-2 sm:grid-cols-12">
-                <div className="sm:col-span-5 min-w-0">
+                <div className="min-w-0 sm:col-span-5">
                   <h3 className="truncate text-base font-semibold text-slate-900">{p.name ?? "Model"}</h3>
                   <div className="mt-1 flex flex-wrap gap-2">
                     <ScorePill label="Overall" value={p.scores?.overall} />
@@ -164,10 +173,10 @@ function BandList({ title, items, anchor }: { title: string; items: any[]; ancho
                     <ScorePill label="Review" value={p.scores?.review} />
                     <ScorePill label="Value" value={p.scores?.value} />
                   </div>
-                  <div className="mt-2 text-sm text-slate-600">Prev rank: {p.prevRank ?? "—"}</div>
+                  {p.prevRank && <div className="mt-2 text-sm text-slate-600">Prev rank: {p.prevRank}</div>}
                 </div>
                 {/* Spec stack */}
-                <div className="sm:col-span-5 grid gap-1.5">
+                <div className="grid gap-1.5 sm:col-span-5">
                   <StatRow k="Price" v={p.price ?? p.priceText} />
                   <StatRow k="Base" v={p.base ?? p.dock} />
                   <StatRow k="Navigation" v={p.navigation} />
@@ -175,15 +184,12 @@ function BandList({ title, items, anchor }: { title: string; items: any[]; ancho
                   <StatRow k="Mop type" v={p.mopType} />
                 </div>
                 {/* CTA */}
-                <div className="sm:col-span-2 flex items-end justify-end">
+                <div className="flex items-end justify-end sm:col-span-2">
                   <div className="flex flex-col items-end gap-2">
-                    <a
-                      href={p.buyUrl ?? "#"}
-                      className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black"
-                    >
+                    <a href={p.buyUrl ?? "#"} className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black">
                       Buy
                     </a>
-                    {/* Compare toggle lives on the ProductCard normally; leave a placeholder spot here if needed */}
+                    {/* CompareToggle kan placeras här om du vill ha inline-knapp */}
                   </div>
                 </div>
               </div>
@@ -195,25 +201,9 @@ function BandList({ title, items, anchor }: { title: string; items: any[]; ancho
   );
 }
 
-function QuickNav() {
-  return (
-    <nav className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 overflow-x-auto px-4 py-2 text-sm">
-        <a href="#winners" className="rounded-full px-3 py-1 font-medium text-slate-700 hover:bg-slate-100">Winners</a>
-        <a href="#premium" className="rounded-full px-3 py-1 font-medium text-slate-700 hover:bg-slate-100">Premium</a>
-        <a href="#performance" className="rounded-full px-3 py-1 font-medium text-slate-700 hover:bg-slate-100">Performance</a>
-        <a href="#budget" className="rounded-full px-3 py-1 font-medium text-slate-700 hover:bg-slate-100">Budget</a>
-        <a href="#compare" className="ml-auto rounded-full bg-slate-900 px-3 py-1 font-semibold text-white hover:bg-black">Compare</a>
-      </div>
-    </nav>
-  );
-}
-
 export default async function Page() {
-  // Data shape expected: { premium: Product[], performance: Product[], budget: Product[] }
-  // If your `getProducts()` differs, adapt the mapping here.
+  // getProducts() är nu normaliserad och parametern är valfri
   const { premium = [], performance = [], budget = [] } = (await getProducts()) as any;
-
   const winners = [premium?.[0], performance?.[0], budget?.[0]].filter(Boolean);
 
   return (
@@ -226,14 +216,12 @@ export default async function Page() {
       <BandList title="Performance" items={performance} anchor="performance" />
       <BandList title="Budget" items={budget} anchor="budget" />
 
-      {/* Compare section lives on the same page */}
       <section id="compare" className="mx-auto max-w-6xl px-4 pt-8 pb-24">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-xl font-bold text-slate-900">Compare</h2>
           <a href="#top" className="text-sm font-medium text-slate-700 hover:text-slate-900">Back to top ↑</a>
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-          {/* Expect your existing client component to render the zebra rows + best-in-row highlights */}
           <CompareInline />
         </div>
       </section>
