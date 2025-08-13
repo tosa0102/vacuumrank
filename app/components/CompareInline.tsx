@@ -1,141 +1,95 @@
-'use client';
+"use client";
+import React from "react";
 
-import { useEffect, useMemo, useState } from 'react';
-
-type Band = 'premium' | 'performance' | 'budget';
-type Scores = { spec: number; review?: number; value: number; overall: number; prevRank?: number };
-type Product = {
-  id: string; name: string; band: Band;
-  price?: number; price_gbp?: number;
-  base?: string; navigation?: string; suction_pa?: number; mop_type?: string;
-  scores: Scores; image?: string;
+type Prod = {
+  name: string;
+  image?: string;
+  suction?: number | string;
+  mopType?: string;
+  dock?: string;      // eller 'base'
+  base?: string;
+  navigation?: string;
+  edgeTools?: string;
+  reviewStars?: number | string;
+  specScore?: number | string;
+  priceValue?: number; // numeriskt pris för jämförelse
+  price?: string;      // visning "~£999"
 };
 
-const KEY = 'rp_compare_robotvacuums';
+export default function CompareInline({ items = [] as Prod[] }) {
+  // Normalisera 'base' → 'dock' så tabellen får samma label
+  const prods = items.map(p => ({ ...p, dock: p.dock ?? p.base }));
 
-function readIds(): string[] {
-  try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; }
-}
+  const rows: {
+    key: keyof Prod;
+    label: string;
+    winner: "max" | "min" | null;
+    display?: (v: any, p: Prod) => React.ReactNode;
+  }[] = [
+    { key: "suction",     label: "Suction (Pa)", winner: "max" },
+    { key: "mopType",     label: "Mop",          winner: null },
+    { key: "dock",        label: "Dock",         winner: null },
+    { key: "navigation",  label: "Navigation",   winner: null },
+    { key: "edgeTools",   label: "Edge tools",   winner: null },
+    { key: "reviewStars", label: "Review Stars", winner: "max" },
+    { key: "specScore",   label: "Spec Score",   winner: "max" },
+    { key: "priceValue",  label: "Street price", winner: "min", display: (_: any, p: Prod) => p.price ?? "–" },
+  ];
 
-function bestIdx(vals: (number|undefined)[], preferHigh: boolean) {
-  const norm = vals.map(v => typeof v === 'number' ? v : (preferHigh ? -Infinity : Infinity));
-  const best = preferHigh ? Math.max(...norm) : Math.min(...norm);
-  if (!isFinite(best)) return new Set<number>();
-  return new Set(norm.map((v,i)=>v===best?i:-1).filter(i=>i>=0));
-}
-
-export default function CompareInline({ products, currencyCode }:{ products: Product[]; currencyCode: string }) {
-  const [ids, setIds] = useState<string[]>([]);
-  useEffect(() => {
-    setIds(readIds());
-    const onChange = () => setIds(readIds());
-    window.addEventListener('compare:changed', onChange as any);
-    return () => window.removeEventListener('compare:changed', onChange as any);
-  }, []);
-
-  const items = useMemo(() => {
-    const map = new Map(products.map(p=>[p.id, p]));
-    return ids.map(id=>map.get(id)).filter(Boolean) as Product[];
-  }, [ids, products]);
-
-  const fmtCurrency = (v?: number) =>
-    (v===undefined || v===null) ? '—'
-    : new Intl.NumberFormat(undefined, { style:'currency', currency: currencyCode }).format(v);
-
-  const downloadCSV = () => {
-    if (!items.length) return;
-    const header = ['Name','Band','Price','Base','Navigation','Suction(Pa)','Mop type','Spec','Review','Value','Overall','PrevRank'];
-    const rows = items.map(p => [
-      p.name, p.band,
-      (p.price_gbp ?? p.price) ?? '',
-      p.base ?? '', p.navigation ?? '', p.suction_pa ?? '',
-      p.mop_type ?? '',
-      p.scores?.spec ?? '', p.scores?.review ?? '', p.scores?.value ?? '',
-      p.scores?.overall ?? '', p.scores?.prevRank ?? ''
-    ]);
-    const csv = [header, ...rows].map(r => r.map(x=>String(x).replaceAll('"','""')).map(x=>`"${x}"`).join(',')).join('\n');
-    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'robot-vacuums-compare.csv';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
-
-  // Highlights
-  const priceVals = items.map(p => p.price_gbp ?? p.price);
-  const priceBest = bestIdx(priceVals, false); // lägst pris bäst
-  const specBest = bestIdx(items.map(p=>p.scores?.spec), true);
-  const reviewBest = bestIdx(items.map(p=>p.scores?.review), true);
-  const valueBest = bestIdx(items.map(p=>p.scores?.value), true);
-  const overallBest = bestIdx(items.map(p=>p.scores?.overall), true);
+  function getWinners(rowKey: keyof Prod, mode: "max" | "min" | null) {
+    if (!mode) return new Set<number>();
+    const nums = prods.map(p => {
+      const v = p[rowKey];
+      return typeof v === "string" ? Number(String(v).replace(/[^0-9.]/g, "")) : (v as number);
+    });
+    const best = mode === "max" ? Math.max(...nums) : Math.min(...nums);
+    const winners = new Set<number>();
+    nums.forEach((n, i) => { if (Number.isFinite(best) && n === best) winners.add(i); });
+    return winners;
+    }
 
   return (
-    <section id="compare" className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-semibold">Compare</h2>
-        <div className="flex gap-2">
-          <button onClick={downloadCSV} className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50">Download CSV</button>
-          <a href="#top" className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50">Back to top</a>
-        </div>
-      </div>
-
-      {!items.length ? (
-        <div className="rounded-xl border p-6 text-gray-700">
-          No models selected. On the list above, click <strong>Add to Compare</strong> on up to three models — your selection appears here.
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border">
-          <div className="grid" style={{gridTemplateColumns:`220px repeat(${items.length}, minmax(220px,1fr))`}}>
-            <div className="px-3 py-3 border font-semibold bg-gray-50"> </div>
-            {items.map((p,i)=>(
-              <div key={i} className="px-3 py-3 border bg-gray-50">
-                <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-lg bg-white overflow-hidden flex items-center justify-center border">
-                    <img src={p.image || `https://placehold.co/120x120?text=${encodeURIComponent(p.name.slice(0,18))}`} alt={p.name} className="w-full h-full object-contain" />
-                  </div>
-                  <div className="font-medium leading-snug">{p.name}</div>
-                </div>
-              </div>
+    <div className="overflow-x-auto">
+      <table className="w-full border-separate border-spacing-0 text-sm">
+        <thead>
+          <tr className="text-left text-slate-600">
+            <th className="sticky left-0 z-[1] bg-white/90 px-3 py-2 font-medium">Comparison</th>
+            {prods.map((p, i) => (
+              <th key={i} className="px-3 py-2 font-semibold text-slate-900">{p.name ?? `Item ${i+1}`}</th>
             ))}
-
-            {/* Rows */}
-            <div className="px-3 py-2 border bg-white font-medium">Price</div>
-            {items.map((p,i)=>(
-              <div key={'pr'+i} className={`px-3 py-2 border ${priceBest.has(i)?'bg-yellow-50 font-medium':''}`}>
-                {fmtCurrency(p.price_gbp ?? p.price)}
-              </div>
-            ))}
-
-            <div className="px-3 py-2 border bg-white font-medium">Base</div>
-            {items.map((p,i)=><div key={'b'+i} className="px-3 py-2 border">{p.base ?? '—'}</div>)}
-
-            <div className="px-3 py-2 border bg-white font-medium">Navigation</div>
-            {items.map((p,i)=><div key={'n'+i} className="px-3 py-2 border">{p.navigation ?? '—'}</div>)}
-
-            <div className="px-3 py-2 border bg-white font-medium">Suction (Pa)</div>
-            {items.map((p,i)=><div key={'s'+i} className={`px-3 py-2 border ${ (typeof p.suction_pa==='number' && overallBest.size===0) ? '' : '' } ${ /* highlight separately if you vill */ ''}`}>{p.suction_pa ?? '—'}</div>)}
-
-            <div className="px-3 py-2 border bg-white font-medium">Mop type</div>
-            {items.map((p,i)=><div key={'m'+i} className="px-3 py-2 border">{p.mop_type ?? '—'}</div>)}
-
-            <div className="px-3 py-2 border bg-white font-medium">Spec</div>
-            {items.map((p,i)=><div key={'sp'+i} className={`px-3 py-2 border ${specBest.has(i)?'bg-yellow-50 font-medium':''}`}>{p.scores?.spec?.toFixed?.(2) ?? '—'}</div>)}
-
-            <div className="px-3 py-2 border bg-white font-medium">Review</div>
-            {items.map((p,i)=><div key={'rv'+i} className={`px-3 py-2 border ${reviewBest.has(i)?'bg-yellow-50 font-medium':''}`}>{p.scores?.review?.toFixed?.(2) ?? '—'}</div>)}
-
-            <div className="px-3 py-2 border bg-white font-medium">Value</div>
-            {items.map((p,i)=><div key={'va'+i} className={`px-3 py-2 border ${valueBest.has(i)?'bg-yellow-50 font-medium':''}`}>{p.scores?.value?.toFixed?.(2) ?? '—'}</div>)}
-
-            <div className="px-3 py-2 border bg-white font-medium">Overall</div>
-            {items.map((p,i)=><div key={'ov'+i} className={`px-3 py-2 border ${overallBest.has(i)?'bg-yellow-50 font-medium':''}`}>{p.scores?.overall?.toFixed?.(2) ?? '—'}</div>)}
-
-            <div className="px-3 py-2 border bg-white font-medium">Prev rank</div>
-            {items.map((p,i)=><div key={'prv'+i} className="px-3 py-2 border">{p.scores?.prevRank ? `#${p.scores.prevRank}` : '—'}</div>)}
-          </div>
-        </div>
-      )}
-    </section>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, r) => {
+            const winners = getWinners(row.key, row.winner);
+            return (
+              <tr key={r} className="odd:bg-slate-50/60">
+                <th className="sticky left-0 z-[1] bg-inherit px-3 py-2 text-slate-700 font-medium">
+                  {row.label}
+                </th>
+                {prods.map((p, i) => {
+                  const raw = p[row.key];
+                  const content = row.display ? row.display(raw, p) : (raw ?? "–");
+                  const isWinner = winners.has(i);
+                  return (
+                    <td
+                      key={i}
+                      className={
+                        "px-3 py-2 align-middle" +
+                        (isWinner ? " bg-emerald-50 ring-1 ring-emerald-200 rounded" : "")
+                      }
+                    >
+                      {content}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="mt-2 text-xs text-slate-500">Bästa värdet per rad markeras subtilt. Pris jämförs numeriskt via <code>priceValue</code>.</p>
+    </div>
   );
 }
+
