@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { getProducts } from "@/app/lib/products";
+import RobotVacuumsHero from "@/app/components/RobotVacuumsHero";
 
 // Client-only compare widgets (unchanged for lower sections)
 const CompareInline = dynamic(() => import("@/app/components/CompareInline"), { ssr: false });
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
 };
 
 // ——— CONFIG used in the header (can be moved to a CMS later) ———
-const HERO_DATE = "August 2025"; // shown in parentheses after the H1, per screenshot
+<RobotVacuumsHero />
 const CTA_TEXT = "Read: Best Robot Vacuums 2025 (UK)"; // pill button text in the screenshot
 const CTA_HREF = "/best-robot-vacuum-2025"; // adjust if you have a different URL
 const LOGO_SRC = "/logo-rankpilot.svg"; // replace with your actual logo asset or remote URL
