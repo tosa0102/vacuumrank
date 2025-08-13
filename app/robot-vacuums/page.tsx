@@ -1,16 +1,13 @@
-// app/robot-vacuums/page.tsx — FULL REPLACEMENT (aligned with normalized getProducts)
-// Flow: Hero → TL;DR winners → Premium/Performance/Budget lists → Compare (same page)
-// Notes:
-// - Assumes you've replaced app/lib/products.ts with the normalizing version (getProducts() no-arg OK).
-// - CompareInline/CompareBar are client-only and loaded dynamically (SSR disabled).
-// - Anchors: #top, #winners, #premium, #performance, #budget, #compare.
+// app/robot-vacuums/page.tsx — TOP SECTION REWORK (match provided screenshot)
+// Scope of this change: ONLY the header/hero + breadcrumbs + "Top picks" heading.
+// The rest of the page remains as before.
 
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { getProducts } from "@/app/lib/products";
 
-// Client-only compare widgets
+// Client-only compare widgets (unchanged for lower sections)
 const CompareInline = dynamic(() => import("@/app/components/CompareInline"), { ssr: false });
 const CompareBar = dynamic(() => import("@/app/components/CompareBar"), { ssr: false });
 
@@ -21,7 +18,67 @@ export const metadata: Metadata = {
   alternates: { canonical: "/robot-vacuums" },
 };
 
-// ——— UI helpers ———
+// ——— CONFIG used in the header (can be moved to a CMS later) ———
+const HERO_DATE = "August 2025"; // shown in parentheses after the H1, per screenshot
+const CTA_TEXT = "Read: Best Robot Vacuums 2025 (UK)"; // pill button text in the screenshot
+const CTA_HREF = "/best-robot-vacuum-2025"; // adjust if you have a different URL
+const LOGO_SRC = "/logo-rankpilot.svg"; // replace with your actual logo asset or remote URL
+
+// ——— TOP SECTION (as in your screenshot) ———
+function HeaderFromDesign() {
+  return (
+    <header className="mx-auto w-full max-w-6xl px-4 pt-6">
+      {/* Row: Logo at left, Title cluster centered */}
+      <div className="grid items-center gap-4 md:grid-cols-12">
+        {/* Logo + wordmark (left) */}
+        <div className="md:col-span-3 flex items-center gap-3">
+          {/* If no local logo exists yet, this renders an empty placeholder box */}
+          <div className="relative h-14 w-14 overflow-hidden rounded-full border border-slate-200 bg-white">
+            {/* Swap to your real logo path or remote URL */}
+            <Image src={LOGO_SRC} alt="RankPilot" fill className="object-contain p-1" sizes="56px" />
+          </div>
+          <div className="text-2xl font-semibold tracking-tight text-slate-900">RankPilot</div>
+        </div>
+
+        {/* Centered title/subtitle/CTA (right) */}
+        <div className="md:col-span-9 text-center">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
+            Best Robot Vacuums in the UK <span className="font-medium">({HERO_DATE})</span>
+          </h1>
+          <p className="mt-1 text-sm text-slate-600 md:text-base">
+            <span className="font-medium">Premium</span> • <span className="font-medium">Performance</span> • <span className="font-medium">Budget</span>
+            <span className="mx-2">—</span>
+            desk‑tested and ranked
+          </p>
+          <div className="mt-3 flex justify-center">
+            <a
+              href={CTA_HREF}
+              className="inline-flex items-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-800 shadow-sm hover:bg-slate-50"
+            >
+              {CTA_TEXT}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Breadcrumbs under the header, aligned left */}
+      <nav aria-label="Breadcrumb" className="mt-4 text-sm text-slate-500">
+        <div className="flex items-center gap-1.5">
+          <a href="/" className="hover:text-slate-700">Home</a>
+          <span className="text-slate-400">/</span>
+          <span className="font-medium text-slate-700">Robot vacuums</span>
+        </div>
+      </nav>
+
+      {/* Section title: Top picks */}
+      <div className="mt-4">
+        <h2 className="text-2xl font-semibold text-slate-900">Top picks</h2>
+      </div>
+    </header>
+  );
+}
+
+// ——— REST OF PAGE (unchanged layout; we will refine in later steps) ———
 function ScorePill({ label, value }: { label: string; value?: number | string }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-xs font-medium text-slate-700">
@@ -60,53 +117,6 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
     <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-white ring-1 ring-slate-200/60">
       <Image src={src} alt={alt} fill className="object-contain p-2" sizes="112px" />
     </div>
-  );
-}
-
-function Hero() {
-  return (
-    <section id="top" className="mx-auto max-w-6xl px-4 pt-8 pb-6 md:pt-12 md:pb-8">
-      <div className="grid items-center gap-6 md:grid-cols-12">
-        <div className="md:col-span-7">
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">Best Robot Vacuums in the UK</h1>
-          <p className="mt-3 text-slate-600 md:text-lg">
-            Our lab‑weighted rankings for 2025, split by price band. Clear winners, transparent scoring, and a built‑in compare table.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2 text-sm">
-            <a href="#winners" className="rounded-full border border-slate-300 bg-white px-4 py-2 font-medium text-slate-800 hover:bg-slate-50">
-              TL;DR Winners
-            </a>
-            <a href="#compare" className="rounded-full bg-slate-900 px-4 py-2 font-medium text-white hover:bg-black">
-              Compare
-            </a>
-          </div>
-        </div>
-        <div className="md:col-span-5">
-          <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5 shadow-sm">
-            <ul className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              <li className="flex items-center justify-between"><span className="text-slate-500">Premium band</span><span className="font-semibold">£900–£1,500</span></li>
-              <li className="flex items-center justify-between"><span className="text-slate-500">Performance band</span><span className="font-semibold">£400–£900</span></li>
-              <li className="flex items-center justify-between"><span className="text-slate-500">Budget band</span><span className="font-semibold">Under £400</span></li>
-              <li className="flex items-center justify-between"><span className="text-slate-500">Methodology</span><span className="font-semibold">Spec • Review • Value</span></li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function QuickNav() {
-  return (
-    <nav className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-      <div className="mx-auto flex max-w-6xl items-center gap-3 overflow-x-auto px-4 py-2 text-sm">
-        <a href="#winners" className="rounded-full px-3 py-1 font-medium text-slate-700 hover:bg-slate-100">Winners</a>
-        <a href="#premium" className="rounded-full px-3 py-1 font-medium text-slate-700 hover:bg-slate-100">Premium</a>
-        <a href="#performance" className="rounded-full px-3 py-1 font-medium text-slate-700 hover:bg-slate-100">Performance</a>
-        <a href="#budget" className="rounded-full px-3 py-1 font-medium text-slate-700 hover:bg-slate-100">Budget</a>
-        <a href="#compare" className="ml-auto rounded-full bg-slate-900 px-3 py-1 font-semibold text-white hover:bg-black">Compare</a>
-      </div>
-    </nav>
   );
 }
 
@@ -175,7 +185,6 @@ function BandList({ title, items, anchor }: { title: string; items: any[]; ancho
                   </div>
                   {p.prevRank && <div className="mt-2 text-sm text-slate-600">Prev rank: {p.prevRank}</div>}
                 </div>
-                {/* Spec stack */}
                 <div className="grid gap-1.5 sm:col-span-5">
                   <StatRow k="Price" v={p.price ?? p.priceText} />
                   <StatRow k="Base" v={p.base ?? p.dock} />
@@ -183,13 +192,11 @@ function BandList({ title, items, anchor }: { title: string; items: any[]; ancho
                   <StatRow k="Suction" v={p.suction} />
                   <StatRow k="Mop type" v={p.mopType} />
                 </div>
-                {/* CTA */}
                 <div className="flex items-end justify-end sm:col-span-2">
                   <div className="flex flex-col items-end gap-2">
                     <a href={p.buyUrl ?? "#"} className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black">
                       Buy
                     </a>
-                    {/* CompareToggle kan placeras här om du vill ha inline-knapp */}
                   </div>
                 </div>
               </div>
@@ -202,31 +209,31 @@ function BandList({ title, items, anchor }: { title: string; items: any[]; ancho
 }
 
 export default async function Page() {
-  // getProducts() är nu normaliserad och parametern är valfri
   const { premium = [], performance = [], budget = [] } = (await getProducts()) as any;
   const winners = [premium?.[0], performance?.[0], budget?.[0]].filter(Boolean);
 
   return (
-    <main className="min-h-screen bg-slate-50/50">
-      <Hero />
-      <QuickNav />
-      <TLDRWinners winners={winners} />
+    <main className="min-h-screen bg-white">
+      {/* NEW: top section per screenshot */}
+      <HeaderFromDesign />
 
-      <BandList title="Premium" items={premium} anchor="premium" />
-      <BandList title="Performance" items={performance} anchor="performance" />
-      <BandList title="Budget" items={budget} anchor="budget" />
-
-      <section id="compare" className="mx-auto max-w-6xl px-4 pt-8 pb-24">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-slate-900">Compare</h2>
-          <a href="#top" className="text-sm font-medium text-slate-700 hover:text-slate-900">Back to top ↑</a>
-        </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-          <CompareInline />
-        </div>
+      {/* Below: unchanged sections (we'll refine in later steps) */}
+      <section className="bg-slate-50/50">
+        <TLDRWinners winners={winners} />
+        <BandList title="Premium" items={premium} anchor="premium" />
+        <BandList title="Performance" items={performance} anchor="performance" />
+        <BandList title="Budget" items={budget} anchor="budget" />
+        <section id="compare" className="mx-auto max-w-6xl px-4 pt-8 pb-24">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-slate-900">Compare</h2>
+            <a href="#top" className="text-sm font-medium text-slate-700 hover:text-slate-900">Back to top ↑</a>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <CompareInline />
+          </div>
+        </section>
       </section>
 
-      {/* Sticky bottom CompareBar (client) */}
       <CompareBar />
     </main>
   );
