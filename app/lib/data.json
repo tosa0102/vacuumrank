@@ -1,0 +1,50 @@
+{
+  "premium": [
+    {
+      "id": "s1-ultra",
+      "name": "Shark Matrix S1 Ultra",
+      "image": "https://m.media-amazon.com/images/I/71example.jpg",
+      "price": "£1,199",
+      "priceValue": 1199,
+      "base": "Self-empty + mop wash/dry",
+      "navigation": "Lidar + room mapping",
+      "suction": 8000,
+      "mopType": "Vibra-mop",
+      "scores": { "overall": 9.2, "spec": 9.4, "review": 9.0, "value": 8.8 },
+      "prevRank": 1,
+      "buyUrl": "https://www.amazon.co.uk/s?k=Shark+Matrix+S1+Ultra"
+    }
+  ],
+  "performance": [
+    {
+      "id": "roborock-qrevo",
+      "name": "Roborock Q Revo",
+      "image": "https://m.media-amazon.com/images/I/71example2.jpg",
+      "price": "£699",
+      "priceValue": 699,
+      "base": "Self-empty + mop wash",
+      "navigation": "Lidar",
+      "suction": 5500,
+      "mopType": "Dual spinning",
+      "scores": { "overall": 8.7, "spec": 8.6, "review": 8.8, "value": 8.7 },
+      "prevRank": 2,
+      "buyUrl": "https://www.amazon.co.uk/s?k=Roborock+Q+Revo"
+    }
+  ],
+  "budget": [
+    {
+      "id": "eufy-x8",
+      "name": "Eufy X8",
+      "image": "https://m.media-amazon.com/images/I/71example3.jpg",
+      "price": "£349",
+      "priceValue": 349,
+      "base": "Standard dock",
+      "navigation": "Camera + gyroscope",
+      "suction": 4000,
+      "mopType": "Pad",
+      "scores": { "overall": 8.1, "spec": 7.8, "review": 8.2, "value": 8.5 },
+      "prevRank": 3,
+      "buyUrl": "https://www.amazon.co.uk/s?k=Eufy+X8"
+    }
+  ]
+}
