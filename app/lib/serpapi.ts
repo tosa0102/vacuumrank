@@ -42,7 +42,7 @@ export async function fetchShoppingOffers(query: string): Promise<Offers> {
     )}&api_key=${process.env.SERPAPI_KEY}`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 21_600 } });
+    const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) return { vendors: {} } as Offers;
 
     const data = await res.json();
