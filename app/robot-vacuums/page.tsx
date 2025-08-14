@@ -1,4 +1,4 @@
-// app/robot-vacuums/page.tsx — TOP SECTION (direct-image, no proxy)
+// app/robot-vacuums/page.tsx — never use Amazon images (page-side guard) + direct <img>
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -6,9 +6,8 @@ import { getProducts } from "@/app/lib/products";
 import type { ProductLike } from "@/app/lib/serpapi";
 import { fetchShoppingOffersSmart } from "@/app/lib/serpapi";
 
-export const revalidate = 86_400; // uppdatera datumet (månad/år) dagligen
+export const revalidate = 86_400;
 
-// Client-only (används längre ned)
 const CompareInline = dynamic(() => import("@/app/components/CompareInline"), { ssr: false });
 const CompareBar = dynamic(() => import("@/app/components/CompareBar"), { ssr: false });
 
@@ -19,12 +18,25 @@ export const metadata: Metadata = {
   alternates: { canonical: "/robot-vacuums" },
 };
 
-// Header-config
 const CTA_TEXT = "Read: Best Robot Vacuums 2025 (UK)";
 const CTA_HREF = "/best-robot-vacuum-2025";
-const LOGO_SRC = "/rankpilot-logo.jpg"; // lägg i /public
+const LOGO_SRC = "/rankpilot-logo.jpg";
 const HERO_DATE = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(new Date());
-const GBP = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+
+function isAmazonHost(u?: string) {
+  if (!u) return false;
+  try {
+    const h = new URL(u).hostname.toLowerCase();
+    return (
+      h.includes("media-amazon.") ||
+      h.includes("images-amazon.") ||
+      h.endsWith("amazon.com") ||
+      h.endsWith("amazon.co.uk")
+    );
+  } catch {
+    return false;
+  }
+}
 
 function HeaderFromDesign() {
   return (
@@ -32,14 +44,7 @@ function HeaderFromDesign() {
       <div className="grid items-center gap-4 md:grid-cols-12">
         <div className="md:col-span-3">
           <div className="relative h-28 w-28 sm:h-32 sm:w-32">
-            <Image
-              src={LOGO_SRC}
-              alt="RankPilot"
-              fill
-              className="object-contain"
-              sizes="128px"
-              priority
-            />
+            <Image src={LOGO_SRC} alt="RankPilot" fill className="object-contain" sizes="128px" priority />
           </div>
         </div>
         <div className="md:col-span-9 text-center">
@@ -47,7 +52,8 @@ function HeaderFromDesign() {
             Best Robot Vacuums in the UK <span className="font-medium">({HERO_DATE})</span>
           </h1>
           <p className="mt-1 text-sm md:text-base text-slate-600">
-            <span className="font-medium">Premium</span> • <span className="font-medium">Performance</span> • <span className="font-medium">Budget</span>
+            <span className="font-medium">Premium</span> • <span className="font-medium">Performance</span> •{" "}
+            <span className="font-medium">Budget</span>
             <span className="mx-2">—</span> desk-tested and ranked
           </p>
           <div className="mt-3 flex justify-center">
@@ -63,7 +69,9 @@ function HeaderFromDesign() {
 
       <nav aria-label="Breadcrumb" className="mt-4 text-sm text-slate-500">
         <div className="flex items-center gap-1.5">
-          <a href="/" className="hover:text-slate-700">Home</a>
+          <a href="/" className="hover:text-slate-700">
+            Home
+          </a>
           <span className="text-slate-400">/</span>
           <span className="font-medium text-slate-700">Robot vacuums</span>
         </div>
@@ -82,32 +90,19 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
     return (
       <div className="h-28 w-28 rounded-xl bg-slate-100 flex items-center justify-center text-slate-300">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <rect x="3" y="3" width="18" height="14" rx="2"/><path d="m3 14 4-4 3 3 5-5 3 3"/>
+          <rect x="3" y="3" width="18" height="14" rx="2" />
+          <path d="m3 14 4-4 3 3 5-5 3 3" />
         </svg>
       </div>
     );
   }
   // eslint-disable-next-line @next/next/no-img-element
   return (
-    <img
-      src={src}
-      alt={alt}
-      referrerPolicy="no-referrer"
-      className="h-28 w-28 rounded-xl bg-white object-contain p-2"
-      loading="lazy"
-    />
+    <img src={src} alt={alt} referrerPolicy="no-referrer" className="h-28 w-28 rounded-xl bg-white object-contain p-2" loading="lazy" />
   );
 }
 
-function StatCell({
-  title,
-  value,
-  long = false,
-}: {
-  title: string;
-  value?: string | number;
-  long?: boolean;
-}) {
+function StatCell({ title, value, long = false }: { title: string; value?: string | number; long?: boolean }) {
   return (
     <div className="min-w-0">
       <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{title}</div>
@@ -160,8 +155,7 @@ function RankingPanel({
         </div>
       </div>
       <div className="mt-2 text-[12px] text-slate-600">
-        <span className="font-medium">Ranking (previous)</span>{" "}
-        <span>{overall ? "1" : "–"} {prevRank ? `(${prevRank})` : ""}</span>
+        <span className="font-medium">Ranking (previous)</span> <span>{overall ? "1" : "–"} {prevRank ? `(${prevRank})` : ""}</span>
       </div>
     </aside>
   );
@@ -172,17 +166,14 @@ function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
   const q = encodeURIComponent(p?.name ?? "");
   const v = offers?.vendors ?? {};
   const buttons: { label: string; href: string }[] = [];
-
   const add = (vendor: "amazon" | "currys" | "argos" | "ao", label: string, fallback: string) => {
     const url = v[vendor]?.url ?? p?.links?.[vendor] ?? p?.[`${vendor}Url`] ?? fallback;
     buttons.push({ label, href: url });
   };
-
   add("amazon", "Buy at Amazon", `https://www.amazon.co.uk/s?k=${q}`);
   add("currys", "Buy at Currys", `https://www.currys.co.uk/search?q=${q}`);
   add("argos", "Buy at Argos", `https://www.argos.co.uk/search/${q}/`);
   add("ao", "Buy at AO", `https://ao.com/l/search?search=${q}`);
-
   return buttons;
 }
 
@@ -210,8 +201,11 @@ function BandList({
           const key = keyFor(p);
           const offers = offersByKey.get(key);
           const dynImage = imagesByKey.get(key);
-          // Bildval: manuell bild om du redan har en; annars SerpAPI-bild
-          const displayImage = (p?.image && typeof p.image === "string" ? p.image : dynImage) as string | undefined;
+
+          // Bildval (page-side guard): använd inte Amazon-host
+          const manualOk = p?.image && !isAmazonHost(p.image) ? (p.image as string) : undefined;
+          const serpOk = dynImage && !isAmazonHost(dynImage) ? (dynImage as string) : undefined;
+          const displayImage = manualOk || serpOk; // kan bli undefined → placeholder
 
           return (
             <li key={p.id ?? idx} className="relative rounded-3xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
@@ -220,7 +214,6 @@ function BandList({
               </span>
 
               <div className="grid gap-4 md:grid-cols-12">
-                {/* Vänster: bild + info */}
                 <div className="md:col-span-8 lg:col-span-9">
                   <div className="flex items-start gap-5">
                     <ProductImage src={displayImage} alt={p.name ?? "Robot vacuum"} />
@@ -249,7 +242,6 @@ function BandList({
                     </div>
                   </div>
                 </div>
-                {/* Höger: ranking */}
                 <div className="md:col-span-4 lg:col-span-3">
                   <RankingPanel
                     spec={p.scores?.spec}
@@ -276,7 +268,6 @@ export default async function Page() {
   for (const p of all) byKey.set(keyFor(p), p);
   const keys = Array.from(byKey.keys());
 
-  // Hämta offers (bilder) smart per unik nyckel
   const results = await Promise.allSettled(
     keys.map((k) => {
       const p = byKey.get(k) as ProductLike;
