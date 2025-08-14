@@ -1,15 +1,28 @@
 // app/lib/specs-scraper.ts
-// SerpAPI-sök + HTML-extraktion (JSON-LD, tabellheuristik, regex-fallback)
-// Med hårda tidsgränser och länkbegränsning.
+// HTML-extraktion (JSON-LD, tabellheuristik, regex-fallback) + SerpAPI sök.
+// Stöd för "hintUrls" som testas FÖRE sökningar. Returnerar även källa.
 
 import { SPEC_FIELD_MAP } from "./spec-sources";
 
-const TIMEOUT_MS = 2500;              // hård timeout per nätverksanrop
-const MAX_LINKS_PER_QUERY = 3;        // försök bara på topp-länkar
+const TIMEOUT_MS = 2500;
+const MAX_LINKS_PER_QUERY = 3;
 const UA = "Mozilla/5.0 (RankPilot bot for product spec aggregation)";
+
+type ExtractOut = {
+  base?: string;
+  navigation?: string;
+  suction?: string;
+  mopType?: string;
+};
+
+export type ScrapeResult = ExtractOut & {
+  sourceUrl?: string;
+  sourceDomain?: string;
+};
 
 function norm(s?: string) { return (s ?? "").trim(); }
 function lc(s?: string) { return norm(s).toLowerCase(); }
+function host(u?: string) { try { return u ? new URL(u).hostname : undefined; } catch { return undefined; } }
 
 function onlyNumber(s?: string) {
   if (!s) return undefined;
@@ -23,42 +36,37 @@ function withPa(val?: string) {
   return n ? `${n} Pa` : val;
 }
 
-function withTimeout(p: Promise<Response>, ms = TIMEOUT_MS): Promise<Response> {
+function abortable(p: Promise<Response>, ms = TIMEOUT_MS): Promise<Response> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
-  return p.finally(() => clearTimeout(t)).catch(() => { throw new Error("timeout"); });
+  return fetch("", { signal: ctrl.signal } as any) // no-op to capture types
+    .catch(() => {})
+    .finally(() => {}) as any, p.finally(() => clearTimeout(t));
 }
 
 async function serpApiSearch(query: string): Promise<string[]> {
-  if (!process.env.SERPAPI_KEY) {
-    console.warn("[specs-scraper] SERPAPI_KEY saknas");
-    return [];
-  }
+  if (!process.env.SERPAPI_KEY) return [];
   const q = `${query} (specifications OR specs OR features)`;
   const url = `https://serpapi.com/search.json?engine=google&hl=en&gl=uk&num=10&q=${encodeURIComponent(q)}&api_key=${process.env.SERPAPI_KEY}`;
   try {
-    const res = await withTimeout(fetch(url, { cache: "no-store" }));
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return [];
     const data = await res.json();
     const items = data?.organic_results ?? [];
     return items.map((x: any) => x?.link).filter(Boolean).slice(0, MAX_LINKS_PER_QUERY);
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 async function fetchHtml(url: string): Promise<string> {
   try {
-    const res = await withTimeout(fetch(url, {
-      cache: "no-store",            // undvik Response.clone-problemet
+    const res = await fetch(url, {
+      cache: "no-store",
       redirect: "follow",
       headers: { "user-agent": UA },
-    }));
+    });
     if (!res.ok) return "";
     return await res.text();
-  } catch {
-    return "";
-  }
+  } catch { return ""; }
 }
 
 async function extractJsonLd(html: string): Promise<any[]> {
@@ -72,7 +80,6 @@ async function extractJsonLd(html: string): Promise<any[]> {
   }
   return blocks;
 }
-
 function pickFromAdditionalProps(props: any[] | undefined, keys: string[]): string | undefined {
   if (!Array.isArray(props)) return;
   for (const key of keys) {
@@ -81,8 +88,7 @@ function pickFromAdditionalProps(props: any[] | undefined, keys: string[]): stri
     if (v) return v;
   }
 }
-
-function extractFromJsonLd(json: any) {
+function extractFromJsonLd(json: any): ExtractOut {
   const bag: any[] = Array.isArray(json?.["@graph"]) ? json["@graph"] : [json];
   const product = bag.find((n) => {
     const types = Array.isArray(n?.["@type"]) ? n["@type"] : [n?.["@type"]];
@@ -102,8 +108,7 @@ function extractFromJsonLd(json: any) {
     mopType: norm(mopType),
   };
 }
-
-function extractFromHtmlTables(html: string) {
+function extractFromHtmlTables(html: string): ExtractOut {
   const lower = html.toLowerCase();
 
   function pick(keys: string[]): string | undefined {
@@ -127,7 +132,6 @@ function extractFromHtmlTables(html: string) {
           }
         }
       }
-
       pos = 0;
       while ((pos = lower.indexOf("<dt", pos)) !== -1) {
         const dtClose = lower.indexOf("</dt>", pos);
@@ -160,9 +164,8 @@ function extractFromHtmlTables(html: string) {
     mopType: norm(mopType),
   };
 }
-
 // Regex-fallback i hela dokumentet
-function extractByRegex(html: string) {
+function extractByRegex(html: string): ExtractOut {
   const text = html.replace(/\s+/g, " ");
   const mSuction = text.match(/(\d{3,5})\s*pa\b/i);
   const nav = /lidar|laser|vslam|camera|gyro/i.exec(text)?.[0];
@@ -170,47 +173,52 @@ function extractByRegex(html: string) {
   const base = /self-?empty|auto(?:matic)?\s*empty(?:ing)?|charging\s+dock|clean(?:ing)?\s*(?:and\s*)?dry(?:ing)?\s*station|wash\/?dry\s*station/i.exec(text)?.[0];
 
   return {
-    base: base,
-    navigation: nav,
-    suction: withPa(mSuction?.[0]),
-    mopType: mop,
+    base, navigation: nav, suction: withPa(mSuction?.[0]), mopType: mop,
   };
 }
 
-export async function searchAndExtractSpecs({ queries }: { queries: string[] }): Promise<Record<string, string | undefined>> {
-  const out: Record<string, string | undefined> = {};
+async function tryExtractFromUrl(url: string): Promise<ScrapeResult | undefined> {
+  const html = await fetchHtml(url);
+  if (!html) return undefined;
+
+  const out: ScrapeResult = { sourceUrl: url, sourceDomain: host(url) };
+
+  // 1) JSON-LD
+  const blocks = await extractJsonLd(html);
+  for (const b of blocks) Object.assign(out, Object.fromEntries(Object.entries(extractFromJsonLd(b)).filter(([_, v]) => v)));
+
+  // 2) Tabeller
+  const fromHtml = extractFromHtmlTables(html);
+  for (const [k, v] of Object.entries(fromHtml)) if ((out as any)[k] == null && v) (out as any)[k] = v;
+
+  // 3) Regex
+  const byRegex = extractByRegex(html);
+  for (const [k, v] of Object.entries(byRegex)) if ((out as any)[k] == null && v) (out as any)[k] = v;
+
+  if (out.base || out.navigation || out.suction || out.mopType) return out;
+  return undefined;
+}
+
+export async function searchAndExtractSpecs({
+  queries,
+  hintUrls = [],
+}: {
+  queries: string[];
+  hintUrls?: string[];
+}): Promise<ScrapeResult> {
+  // 0) Försök först med hint-URLs (t.ex. Currys/Argos/AO-länkar vi redan har)
+  for (const u of hintUrls) {
+    const r = await tryExtractFromUrl(u);
+    if (r) return r;
+  }
+
+  // 1) Annars sök via SerpAPI
   for (const q of queries) {
     const links = await serpApiSearch(q);
     for (const link of links) {
-      const html = await fetchHtml(link);
-      if (!html) continue;
-
-      // 1) JSON-LD
-      const blocks = await extractJsonLd(html);
-      for (const b of blocks) {
-        const part = extractFromJsonLd(b);
-        out.base = out.base ?? part.base;
-        out.navigation = out.navigation ?? part.navigation;
-        out.suction = out.suction ?? part.suction;
-        out.mopType = out.mopType ?? part.mopType;
-      }
-
-      // 2) HTML-tabeller
-      const fromHtml = extractFromHtmlTables(html);
-      out.base = out.base ?? fromHtml.base;
-      out.navigation = out.navigation ?? fromHtml.navigation;
-      out.suction = out.suction ?? fromHtml.suction;
-      out.mopType = out.mopType ?? fromHtml.mopType;
-
-      // 3) Regex-fallback
-      const byRegex = extractByRegex(html);
-      out.base = out.base ?? byRegex.base;
-      out.navigation = out.navigation ?? byRegex.navigation;
-      out.suction = out.suction ?? byRegex.suction;
-      out.mopType = out.mopType ?? byRegex.mopType;
-
-      if (out.base || out.navigation || out.suction || out.mopType) return out;
+      const r = await tryExtractFromUrl(link);
+      if (r) return r;
     }
   }
-  return out;
+  return {};
 }
