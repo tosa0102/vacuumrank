@@ -89,11 +89,14 @@ function HeaderFromDesign() {
   );
 }
 
-/** Produktbild: alltid <img>, proxar externa URL:er via /api/img för stabil inbäddning */
+/** Produktbild: <img> med proxy + fallback till original-URL om proxyn felar */
 function ProductImage({ src, alt }: { src?: string; alt: string }) {
   const isHttp = (s?: string) => !!s && /^https?:\/\//i.test(s || "");
-  const toProxy = (u?: string) => (u ? (isHttp(u) ? `/api/img?u=${encodeURIComponent(u)}` : u) : undefined);
-  const finalSrc = toProxy(src);
+  const proxied = (u?: string) => (u ? (isHttp(u) ? `/api/img?u=${encodeURIComponent(u)}` : u) : undefined);
+
+  const original = src;
+  const viaProxy = proxied(src);
+  const finalSrc = viaProxy || original;
 
   if (!finalSrc) {
     return (
@@ -113,6 +116,13 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
       referrerPolicy="no-referrer"
       className="h-28 w-28 rounded-xl bg-white object-contain p-2"
       loading="lazy"
+      onError={(e) => {
+        // Om proxyn skulle 502:a: testa original-URL direkt
+        const img = e.currentTarget as HTMLImageElement;
+        if (viaProxy && original && img.src !== original) {
+          img.src = original;
+        }
+      }}
     />
   );
 }
