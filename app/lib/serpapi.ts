@@ -34,7 +34,9 @@ function normalizeVendorName(name?: string): keyof Offers["vendors"] | undefined
 }
 
 export async function fetchShoppingOffers(query: string): Promise<Offers> {
-  if (!query) return { vendors: {} } as Offers;
+  if (!process.env.SERPAPI_KEY) {
+    console.warn("SERPAPI_KEY missing; skipping SerpAPI for:", query);
+    return { vendors: {} } as Offers;
 
   const url =
     `https://serpapi.com/search.json?engine=google_shopping&hl=en&gl=uk&q=${encodeURIComponent(
