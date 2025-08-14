@@ -1,10 +1,12 @@
-// app/robot-vacuums/page.tsx — never use Amazon images (page-side guard) + direct <img>
+// app/robot-vacuums/page.tsx
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { getProducts } from "@/app/lib/products";
 import type { ProductLike } from "@/app/lib/serpapi";
 import { fetchShoppingOffersSmart } from "@/app/lib/serpapi";
+// ➕ NY: automatiska specifikationer (tillverkare → sekundära källor)
+import { fetchProductSpecs } from "@/app/lib/specs";
 
 export const revalidate = 86_400;
 
@@ -27,12 +29,7 @@ function isAmazonHost(u?: string) {
   if (!u) return false;
   try {
     const h = new URL(u).hostname.toLowerCase();
-    return (
-      h.includes("media-amazon.") ||
-      h.includes("images-amazon.") ||
-      h.endsWith("amazon.com") ||
-      h.endsWith("amazon.co.uk")
-    );
+    return h.includes("media-amazon.") || h.includes("images-amazon.") || h.endsWith("amazon.com") || h.endsWith("amazon.co.uk");
   } catch {
     return false;
   }
@@ -84,7 +81,6 @@ function HeaderFromDesign() {
   );
 }
 
-/** Produktbild: enkel <img> med DIREKT URL (ingen proxy) */
 function ProductImage({ src, alt }: { src?: string; alt: string }) {
   if (!src) {
     return (
@@ -97,9 +93,7 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
     );
   }
   // eslint-disable-next-line @next/next/no-img-element
-  return (
-    <img src={src} alt={alt} referrerPolicy="no-referrer" className="h-28 w-28 rounded-xl bg-white object-contain p-2" loading="lazy" />
-  );
+  return <img src={src} alt={alt} referrerPolicy="no-referrer" className="h-28 w-28 rounded-xl bg-white object-contain p-2" loading="lazy" />;
 }
 
 function StatCell({ title, value, long = false }: { title: string; value?: string | number; long?: boolean }) {
@@ -116,23 +110,6 @@ function StatCell({ title, value, long = false }: { title: string; value?: strin
       </div>
     </div>
   );
-}
-
-// Formatera sugtal till "<tal> Pa"
-function formatSuction(v?: string | number): string | undefined {
-  if (v === undefined || v === null || v === "") return undefined;
-
-  const s = String(v).trim();
-
-  // Om "Pa" redan finns (oavsett versaler), normalisera bara till stor-Pa
-  if (/\bpa\b/i.test(s)) return s.replace(/\bpa\b/i, "Pa");
-
-  // Om värdet är numeriskt (ex. 8000) eller innehåller siffror, ta ut talet
-  const digits = s.replace(/[^\d]/g, "");
-  if (digits) return `${digits} Pa`;
-
-  // fallback: lägg till " Pa" efter originalsträngen
-  return `${s} Pa`;
 }
 
 function RankingPanel({
@@ -172,13 +149,14 @@ function RankingPanel({
         </div>
       </div>
       <div className="mt-2 text-[12px] text-slate-600">
-        <span className="font-medium">Ranking (previous)</span> <span>{overall ? "1" : "–"} {prevRank ? `(${prevRank})` : ""}</span>
+        <span className="font-medium">Ranking (previous)</span>{" "}
+        <span>{overall ? "1" : "–"} {prevRank ? `(${prevRank})` : ""}</span>
       </div>
     </aside>
   );
 }
 
-// CTA-knappar (utan pris)
+// Knappar utan pris
 function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
   const q = encodeURIComponent(p?.name ?? "");
   const v = offers?.vendors ?? {};
@@ -194,8 +172,20 @@ function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
   return buttons;
 }
 
+function isOkImage(u?: string) {
+  return u && !isAmazonHost(u) ? u : undefined;
+}
 function keyFor(p: any) {
   return [p.brand, p.model, p.name, p.ean, p.asin].filter(Boolean).join("|").toLowerCase();
+}
+
+// ➕ (valfritt men säkert): normalisera suction till “<tal> Pa” ifall sekundärkälla skulle ge “8000”
+function formatSuction(value?: string | number): string | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const s = String(value).trim();
+  if (/\bpa\b/i.test(s)) return s.replace(/\bpa\b/i, "Pa");
+  const digits = s.replace(/[^\d.]/g, "");
+  return digits ? `${digits} Pa` : s;
 }
 
 function BandList({
@@ -204,12 +194,15 @@ function BandList({
   bandLabel,
   offersByKey,
   imagesByKey,
+  // ➕ NY prop: specsByKey
+  specsByKey,
 }: {
   items: any[];
   anchor: string;
   bandLabel: string;
   offersByKey: Map<string, import("@/app/lib/serpapi").Offers>;
   imagesByKey: Map<string, string | undefined>;
+  specsByKey: Map<string, Awaited<ReturnType<typeof fetchProductSpecs>>>;
 }) {
   return (
     <section id={anchor} className="mx-auto max-w-6xl px-4 pt-3 pb-1">
@@ -218,31 +211,32 @@ function BandList({
           const key = keyFor(p);
           const offers = offersByKey.get(key);
           const dynImage = imagesByKey.get(key);
+          const displayImage = isOkImage(p?.image) || isOkImage(dynImage);
 
-          // Bildval (page-side guard): använd inte Amazon-host
-          const manualOk = p?.image && !isAmazonHost(p.image) ? (p.image as string) : undefined;
-          const serpOk = dynImage && !isAmazonHost(dynImage) ? (dynImage as string) : undefined;
-          const displayImage = manualOk || serpOk; // kan bli undefined → placeholder
+          // ➕ Hämta auto-specs för denna nyckel (tillverkare → sekundär, ingen data.json-fallback)
+          const spec = specsByKey.get(key);
 
           return (
             <li key={p.id ?? idx} className="relative rounded-3xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
               <span className="absolute -top-2 left-4 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
                 {bandLabel} <span className="text-slate-500">#{idx + 1}</span>
               </span>
-
               <div className="grid gap-4 md:grid-cols-12">
                 <div className="md:col-span-8 lg:col-span-9">
                   <div className="flex items-start gap-5">
                     <ProductImage src={displayImage} alt={p.name ?? "Robot vacuum"} />
                     <div className="min-w-0 w-full">
                       <h3 className="truncate text-[17px] font-semibold text-slate-900 md:text-lg">{p.name ?? "Model"}</h3>
+
+                      {/* Fakta-rad: Pris från befintlig data; övriga fält endast från automatiska specs */}
                       <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                         <StatCell title="Price" value={p.price ?? p.priceText} />
-                        <StatCell title="Base" value={p.base ?? p.dock} long />
-                        <StatCell title="Navigation" value={p.navigation} long />
-                        <StatCell title="Suction" value={formatSuction(p.suction)} />
-                        <StatCell title="Mop type" value={p.mopType} long />
+                        <StatCell title="Base" value={spec?.base} long />
+                        <StatCell title="Navigation" value={spec?.navigation} long />
+                        <StatCell title="Suction" value={formatSuction(spec?.suction)} />
+                        <StatCell title="Mop type" value={spec?.mopType} long />
                       </div>
+
                       <div className="mt-2 flex flex-wrap gap-2">
                         {retailButtons(p, offers).map((link) => (
                           <a
@@ -259,6 +253,7 @@ function BandList({
                     </div>
                   </div>
                 </div>
+
                 <div className="md:col-span-4 lg:col-span-3">
                   <RankingPanel
                     spec={p.scores?.spec}
@@ -279,12 +274,12 @@ function BandList({
 
 export default async function Page() {
   const { premium = [], performance = [], budget = [] } = (await getProducts()) as any;
-
   const all: any[] = [...premium, ...performance, ...budget];
   const byKey = new Map<string, any>();
   for (const p of all) byKey.set(keyFor(p), p);
   const keys = Array.from(byKey.keys());
 
+  // 1) SerpAPI: bild + vendor-länkar (exkl. Amazon-bildhotlink), oförändrat
   const results = await Promise.allSettled(
     keys.map((k) => {
       const p = byKey.get(k) as ProductLike;
@@ -302,17 +297,33 @@ export default async function Page() {
     }
   });
 
+  // 2) ➕ NYTT: Automatiska specs (tillverkare → sekundära källor). Ingen fallback till data.json.
+  const specResults = await Promise.allSettled(
+    keys.map((k) => {
+      const p = byKey.get(k) as any;
+      return fetchProductSpecs({ brand: p.brand, model: p.model, name: p.name });
+    })
+  );
+  const specsByKey = new Map<string, Awaited<ReturnType<typeof fetchProductSpecs>>>();
+  keys.forEach((k, i) => {
+    const r = specResults[i];
+    if (r.status === "fulfilled") specsByKey.set(k, r.value);
+  });
+
   return (
     <main className="min-h-screen bg-white">
       <HeaderFromDesign />
       <section className="bg-slate-50/50">
-        <BandList items={premium} anchor="premium" bandLabel="Premium" offersByKey={offersByKey} imagesByKey={imagesByKey} />
-        <BandList items={performance} anchor="performance" bandLabel="Performance" offersByKey={offersByKey} imagesByKey={imagesByKey} />
-        <BandList items={budget} anchor="budget" bandLabel="Budget" offersByKey={offersByKey} imagesByKey={imagesByKey} />
+        <BandList items={premium} anchor="premium" bandLabel="Premium" offersByKey={offersByKey} imagesByKey={imagesByKey} specsByKey={specsByKey} />
+        <BandList items={performance} anchor="performance" bandLabel="Performance" offersByKey={offersByKey} imagesByKey={imagesByKey} specsByKey={specsByKey} />
+        <BandList items={budget} anchor="budget" bandLabel="Budget" offersByKey={offersByKey} imagesByKey={imagesByKey} specsByKey={specsByKey} />
+
         <section id="compare" className="mx-auto max-w-6xl px-4 pt-8 pb-24">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900">Compare</h2>
-            <a href="#top" className="text-sm font-medium text-slate-700 hover:text-slate-900">Back to top ↑</a>
+            <a href="#top" className="text-sm font-medium text-slate-700 hover:text-slate-900">
+              Back to top ↑
+            </a>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
             <CompareInline />
