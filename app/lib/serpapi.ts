@@ -83,7 +83,7 @@ export async function fetchShoppingOffers(query: string, p?: ProductLike): Promi
 
   try {
     // 6 timmar cache (ISR)
-    const res = await fetch(url, { next: { revalidate: 21_600 } });
+    const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) return { vendors: {} } as Offers;
 
     const data = await res.json();
