@@ -79,25 +79,13 @@ function HeaderFromDesign() {
   );
 }
 
-// ——— REST OF PAGE (PDF-aligned Top picks) ———
+// ——— REST OF PAGE (PDF-aligned Top picks; no #1 circle) ———
 function ScorePill({ label, value }: { label: string; value?: number | string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-xs font-medium text-slate-700">
+    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-[12px] font-medium text-slate-700">
       <span className="text-[10px] uppercase tracking-wide text-slate-500">{label}</span>
       <span>{value ?? "–"}</span>
     </span>
-  );
-}
-
-function RankBadge({ n }: { n: number }) {
-  const palette = [
-    "bg-emerald-600 text-white",
-    "bg-indigo-600 text-white",
-    "bg-amber-600 text-white",
-  ];
-  const cls = n <= 3 ? palette[n - 1] : "bg-slate-200 text-slate-800";
-  return (
-    <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-bold ${cls}`}>#{n}</div>
   );
 }
 
@@ -124,11 +112,11 @@ function StatCell({
 }) {
   return (
     <div className="min-w-0">
-      <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{title}</div>
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{title}</div>
       <div
         className={
-          "mt-1 text-sm font-medium text-slate-900 break-words " +
-          (long ? "whitespace-pre-line leading-5 min-h-20" : "")
+          "mt-1 text-[13px] font-medium text-slate-900 break-words " +
+          (long ? "whitespace-pre-line leading-5 min-h-[72px] md:min-h-[80px]" : "leading-5")
         }
       >
         {value ?? "–"}
@@ -151,29 +139,29 @@ function RankingPanel({
   prevRank?: number | string;
 }) {
   return (
-    <aside className="rounded-2xl border border-slate-200 bg-white p-3">
-      <div className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-semibold text-slate-700">
+    <aside className="rounded-2xl border border-slate-200 bg-white p-3 md:p-4">
+      <div className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[12px] font-semibold text-slate-700">
         Ranking
       </div>
-      <div className="grid grid-cols-4 gap-2 text-sm">
+      <div className="grid grid-cols-4 gap-2 text-[13px] md:text-sm">
         <div className="text-slate-600">
-          <div className="text-xs uppercase tracking-wide text-slate-500">Spec</div>
+          <div className="text-[11px] uppercase tracking-wide text-slate-500">Spec</div>
           <div className="font-medium">{spec ?? "–"}</div>
         </div>
         <div className="text-slate-600">
-          <div className="text-xs uppercase tracking-wide text-slate-500">Review</div>
+          <div className="text-[11px] uppercase tracking-wide text-slate-500">Review</div>
           <div className="font-medium">{review ?? "–"}</div>
         </div>
         <div className="text-slate-600">
-          <div className="text-xs uppercase tracking-wide text-slate-500">Value</div>
+          <div className="text-[11px] uppercase tracking-wide text-slate-500">Value</div>
           <div className="font-medium">{value ?? "–"}</div>
         </div>
         <div className="text-slate-900">
-          <div className="text-xs uppercase tracking-wide text-slate-500">Overall</div>
-          <div className="font-semibold">{overall ?? "–"}</div>
+          <div className="text-[11px] uppercase tracking-wide text-slate-500">Overall</div>
+          <div className="text-[15px] font-semibold md:text-base">{overall ?? "–"}</div>
         </div>
       </div>
-      <div className="mt-2 text-xs text-slate-600">
+      <div className="mt-2 text-[12px] text-slate-600">
         <span className="font-medium">Ranking (previous)</span>{" "}
         <span>{overall ? "1" : "–"} {prevRank ? `(${prevRank})` : ""}</span>
       </div>
@@ -201,26 +189,28 @@ function BandList({
 
       <ol className="space-y-4">
         {items.map((p: any, idx: number) => (
-          <li key={p.id ?? idx} className="relative rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+          <li
+            key={p.id ?? idx}
+            className="relative rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-5"
+          >
             {/* Liten etikett: “Premium #1” etc. */}
             <span className="absolute -top-3 left-4 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
               {bandLabel} <span className="text-slate-500">#{idx + 1}</span>
             </span>
 
             <div className="grid gap-4 md:grid-cols-12">
-              {/* Vänster: rank + bild + namn + info-rad + CTAs */}
+              {/* Vänster: bild + namn + info-rad + CTAs */}
               <div className="md:col-span-8 lg:col-span-9">
-                <div className="flex items-start gap-4">
-                  <RankBadge n={idx + 1} />
+                <div className="flex items-start gap-5">
                   <ProductImage src={p.image} alt={p.name ?? "Robot vacuum"} />
 
                   <div className="min-w-0 w-full">
                     {/* Namn */}
-                    <h3 className="truncate text-base font-semibold text-slate-900">
+                    <h3 className="truncate text-[17px] font-semibold text-slate-900 md:text-lg">
                       {p.name ?? "Model"}
                     </h3>
 
-                    {/* INFO-RADEN — flyttad upp, med Price först, sedan Base/Nav/Suction/Mop */}
+                    {/* INFO-RADEN — direkt under namn */}
                     <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                       <StatCell title="Price" value={p.price ?? p.priceText} />
                       <StatCell title="Base" value={p.base ?? p.dock} long />
