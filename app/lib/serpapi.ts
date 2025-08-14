@@ -23,9 +23,7 @@ function parsePrice(val: unknown): number | undefined {
   return undefined;
 }
 
-function normalizeVendorName(
-  name?: string
-): keyof Offers["vendors"] | undefined {
+function normalizeVendorName(name?: string): keyof Offers["vendors"] | undefined {
   const s = (name ?? "").toLowerCase();
   if (s.includes("amazon")) return "amazon";
   if (s.includes("currys")) return "currys";
@@ -34,38 +32,28 @@ function normalizeVendorName(
   return undefined;
 }
 
-const STOPWORDS = [
-  "filter",
-  "filters",
-  "bag",
-  "bags",
-  "spare",
-  "spares",
-  "replacement",
-  "refill",
-  "mop cloth",
-  "mop pads",
-  "dust bag",
-  "accessories",
-];
+// Gör thumbnails säkra att bädda in (https + absolut url)
+function normalizeThumb(u?: string): string | undefined {
+  if (!u) return undefined;
+  let s = u.trim();
+  if (s.startsWith("//")) s = "https:" + s;
+  if (s.startsWith("http://")) s = "https://" + s.slice(7);
+  // Tillåt endast https/data: (blocka konstiga scheman)
+  if (s.startsWith("https://") || s.startsWith("data:image/")) return s;
+  return undefined;
+}
 
+const STOPWORDS = ["filter","filters","bag","bags","spare","spares","replacement","refill","mop cloth","mop pads","dust bag","accessories"];
 function looksLikeAccessory(title?: string) {
   const t = (title ?? "").toLowerCase();
   return STOPWORDS.some((w) => t.includes(w));
 }
-
 function tokenise(s: string) {
   return s.toLowerCase().split(/[\s\-_/]+/).filter(Boolean);
 }
 
 // ---------------- query builder ----------------
-export type ProductLike = {
-  name?: string;
-  brand?: string;
-  model?: string;
-  asin?: string;
-  ean?: string;
-};
+export type ProductLike = { name?: string; brand?: string; model?: string; asin?: string; ean?: string; };
 
 export function buildShoppingQuery(p: ProductLike): string {
   if (p.brand && p.model) return `${p.brand} ${p.model}`;
@@ -77,18 +65,12 @@ export function buildShoppingQuery(p: ProductLike): string {
 }
 
 // ---------------- core fetchers ----------------
-export async function fetchShoppingOffersSmart(
-  p: ProductLike
-): Promise<Offers> {
+export async function fetchShoppingOffersSmart(p: ProductLike): Promise<Offers> {
   const query = buildShoppingQuery(p);
   return fetchShoppingOffers(query, p);
 }
 
-// Bakåtkompatibel
-export async function fetchShoppingOffers(
-  query: string,
-  p?: ProductLike
-): Promise<Offers> {
+export async function fetchShoppingOffers(query: string, p?: ProductLike): Promise<Offers> {
   if (!query) return { vendors: {} } as Offers;
   if (!process.env.SERPAPI_KEY) {
     console.warn("SERPAPI_KEY missing; skipping SerpAPI for:", query);
@@ -101,30 +83,20 @@ export async function fetchShoppingOffers(
 
   try {
     // 6 timmar cache (ISR)
-    const res = await fetch(url, { next: { revalidate: 21600 } });
+    const res = await fetch(url, { next: { revalidate: 21_600 } });
     if (!res.ok) return { vendors: {} } as Offers;
 
     const data = await res.json();
     const results: any[] = data?.shopping_results ?? [];
 
     const qTokens = tokenise(query);
-    const vendorWeight: Record<string, number> = {
-      amazon: 3,
-      currys: 2,
-      argos: 2,
-      ao: 2,
-    };
+    const vendorWeight: Record<string, number> = { amazon: 3, currys: 2, argos: 2, ao: 2 };
 
     const scored = results
       .map((r) => {
         const title = String(r?.title ?? "");
         const normalized = normalizeVendorName(r?.source ?? r?.merchant);
-        const vendorKey:
-          | "amazon"
-          | "currys"
-          | "argos"
-          | "ao"
-          | "other" = normalized ?? "other";
+        const vendorKey: "amazon" | "currys" | "argos" | "ao" | "other" = normalized ?? "other";
 
         let score = 0;
         const t = title.toLowerCase();
@@ -139,29 +111,20 @@ export async function fetchShoppingOffers(
     const offers: Offers = { vendors: {} };
 
     for (const { r, vendorKey } of scored) {
-      // Hantera "other" innan vi castar till uniontypen
+      const rawThumb = (r?.thumbnail as string | undefined) ?? (r?.image as string | undefined);
+      const thumb = normalizeThumb(rawThumb);
+
       if (vendorKey === "other") {
-        const thumb =
-          (r?.thumbnail as string | undefined) ??
-          (r?.image as string | undefined);
         if (!offers.image && thumb) offers.image = thumb;
         continue;
       }
 
       const vendor: keyof Offers["vendors"] = vendorKey;
-
       const price = r?.extracted_price ?? parsePrice(r?.price);
-      const link =
-        (r?.link as string | undefined) ??
-        (r?.product_link as string | undefined);
+      const link = (r?.link as string | undefined) ?? (r?.product_link as string | undefined);
 
       if (!offers.vendors[vendor]) offers.vendors[vendor] = { url: link, price };
-
-      const thumb =
-        (r?.thumbnail as string | undefined) ??
-        (r?.image as string | undefined);
-      if ((vendor === "amazon" && thumb) || (!offers.image && thumb))
-        offers.image = thumb;
+      if ((vendor === "amazon" && thumb) || (!offers.image && thumb)) offers.image = thumb;
     }
 
     return offers;
