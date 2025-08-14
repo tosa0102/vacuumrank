@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { getProducts } from "@/app/lib/products";
+import { fetchShoppingOffers } from "@/app/lib/serpapi";
 
 export const revalidate = 86_400; // uppdatera datumet (månad/år) dagligen
 
@@ -22,6 +23,7 @@ const CTA_TEXT = "Read: Best Robot Vacuums 2025 (UK)";
 const CTA_HREF = "/best-robot-vacuum-2025";
 const LOGO_SRC = "/rankpilot-logo.jpg"; // lägg i /public
 const HERO_DATE = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(new Date());
+const GBP = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
 
 function HeaderFromDesign() {
   return (
@@ -79,25 +81,27 @@ function HeaderFromDesign() {
   );
 }
 
-// ——— REST OF PAGE (PDF-aligned Top picks; tighter spacing; multi-retail CTAs) ———
-function ScorePill({ label, value }: { label: string; value?: number | string }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-[12px] font-medium text-slate-700">
-      <span className="text-[10px] uppercase tracking-wide text-slate-500">{label}</span>
-      <span>{value ?? "–"}</span>
-    </span>
-  );
-}
-
+// ——— REST OF PAGE (SerpAPI images + price-on-buttons; tighter spacing) ———
 function ProductImage({ src, alt }: { src?: string; alt: string }) {
-  if (!src) {
-    return <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-slate-100" />;
+  // Om vi har en lokal/whitelistad bild → använd Next/Image
+  if (src && (src.startsWith("/") || src.includes("m.media-amazon.com"))) {
+    return (
+      <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-white">
+        <Image src={src} alt={alt} fill className="object-contain p-2" sizes="112px" />
+      </div>
+    );
   }
-  return (
-    <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-white">
-      <Image src={src} alt={alt} fill className="object-contain p-2" sizes="112px" />
-    </div>
-  );
+  // Annars fallback till vanlig <img> (ingen domain-whitelist krävs)
+  if (src) {
+    return (
+      <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-white">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} alt={alt} className="h-full w-full object-contain p-2" />
+      </div>
+    );
+  }
+  // Placeholder
+  return <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-slate-100" />;
 }
 
 function StatCell({
@@ -107,8 +111,7 @@ function StatCell({
 }: {
   title: string;
   value?: string | number;
-  /** long=true ger plats för 3–4 rader (för Base/Nav/Mop) */
-  long?: boolean;
+  long?: boolean; // ger plats för 3–4 rader
 }) {
   return (
     <div className="min-w-0">
@@ -169,104 +172,113 @@ function RankingPanel({
   );
 }
 
-/** Hjälpare: generera smarta retail-länkar (med fallback till sök-URL) */
-function retailLinks(p: any): { label: string; href: string }[] {
+// Hjälpare: bygg CTA-knappar med pris
+function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
   const q = encodeURIComponent(p?.name ?? "");
-  const links: { label: string; href: string }[] = [];
+  const v = offers?.vendors ?? {};
+  const buttons: { label: string; href: string }[] = [];
 
-  const push = (href: string | undefined, label: string, fallback: string) => {
-    const url = typeof href === "string" && href.length > 0 ? href : fallback;
-    if (url) links.push({ label, href: url });
+  const add = (vendor: "amazon" | "currys" | "argos" | "ao", label: string, fallback: string) => {
+    const url = v[vendor]?.url ?? fallback;
+    const price = v[vendor]?.price;
+    const priceTxt = typeof price === "number" ? ` ${GBP.format(price)}` : "";
+    buttons.push({ label: `${label}${priceTxt}`, href: url });
   };
 
-  // Amazon först (använder befintlig buyUrl om du har den; annars sök-URL)
-  push(p?.buyUrl, "Buy at Amazon", `https://www.amazon.co.uk/s?k=${q}`);
+  add("amazon", "Amazon", `https://www.amazon.co.uk/s?k=${q}`);
+  add("currys", "Currys", `https://www.currys.co.uk/search?q=${q}`);
+  add("argos", "Argos", `https://www.argos.co.uk/search/${q}/`);
+  add("ao", "AO", `https://ao.com/l/search?search=${q}`);
 
-  // Framtida affiliate-partners (Currys, Argos, AO) — använder p.links.* om de finns, annars sök-URL
-  push(p?.links?.currys ?? p?.currysUrl, "Buy at Currys", `https://www.currys.co.uk/search?q=${q}`);
-  push(p?.links?.argos ?? p?.argosUrl, "Buy at Argos", `https://www.argos.co.uk/search/${q}/`);
-  push(p?.links?.ao ?? p?.aoUrl, "Buy at AO", `https://ao.com/l/search?search=${q}`);
-
-  return links;
+  return buttons;
 }
+
+type Enriched = { id?: string; name?: string; image?: string; [k: string]: any };
 
 function BandList({
   items,
   anchor,
   bandLabel,
+  offersByName,
+  imagesByName,
 }: {
-  items: any[];
+  items: Enriched[];
   anchor: string;
   bandLabel: string;
+  offersByName: Map<string, import("@/app/lib/serpapi").Offers>;
+  imagesByName: Map<string, string | undefined>;
 }) {
   return (
-    <section id={anchor} className="mx-auto max-w-6xl px-4 pt-4 pb-2">
-      {/* (Go to Compare →) borttagen enligt önskemål */}
+    <section id={anchor} className="mx-auto max-w-6xl px-4 pt-3 pb-1">
+      {/* "Go to Compare" borttagen */}
+      <ol className="space-y-3 md:space-y-3.5">
+        {items.map((p, idx) => {
+          const nameKey = p.name ?? "";
+          const offers = offersByName.get(nameKey);
+          const dynImage = imagesByName.get(nameKey);
+          const displayImage = p.image || dynImage;
 
-      {/* Tätt mellan korten */}
-      <ol className="space-y-3 md:space-y-4">
-        {items.map((p: any, idx: number) => (
-          <li
-            key={p.id ?? idx}
-            className="relative rounded-3xl border border-slate-200 bg-white p-3 shadow-sm md:p-4"
-          >
-            {/* Liten etikett: “Premium #1” etc. */}
-            <span className="absolute -top-2 left-4 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
-              {bandLabel} <span className="text-slate-500">#{idx + 1}</span>
-            </span>
+          return (
+            <li
+              key={p.id ?? idx}
+              className="relative rounded-3xl border border-slate-200 bg-white p-3 shadow-sm md:p-4"
+            >
+              <span className="absolute -top-2 left-4 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
+                {bandLabel} <span className="text-slate-500">#{idx + 1}</span>
+              </span>
 
-            <div className="grid gap-4 md:grid-cols-12">
-              {/* Vänster: bild + namn + info-rad + CTAs */}
-              <div className="md:col-span-8 lg:col-span-9">
-                <div className="flex items-start gap-5">
-                  <ProductImage src={p.image} alt={p.name ?? "Robot vacuum"} />
+              <div className="grid gap-4 md:grid-cols-12">
+                {/* Vänster: bild + namn + info + CTAs */}
+                <div className="md:col-span-8 lg:col-span-9">
+                  <div className="flex items-start gap-5">
+                    <ProductImage src={displayImage} alt={p.name ?? "Robot vacuum"} />
 
-                  <div className="min-w-0 w-full">
-                    {/* Namn */}
-                    <h3 className="truncate text-[17px] font-semibold text-slate-900 md:text-lg">
-                      {p.name ?? "Model"}
-                    </h3>
+                    <div className="min-w-0 w-full">
+                      <h3 className="truncate text-[17px] font-semibold text-slate-900 md:text-lg">
+                        {p.name ?? "Model"}
+                      </h3>
 
-                    {/* INFO-RADEN — direkt under namn */}
-                    <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-                      <StatCell title="Price" value={p.price ?? p.priceText} />
-                      <StatCell title="Base" value={p.base ?? p.dock} long />
-                      <StatCell title="Navigation" value={p.navigation} long />
-                      <StatCell title="Suction" value={p.suction} />
-                      <StatCell title="Mop type" value={p.mopType} long />
-                    </div>
+                      {/* Info-rad under namn */}
+                      <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                        <StatCell title="Price" value={p.price ?? p.priceText} />
+                        <StatCell title="Base" value={p.base ?? p.dock} long />
+                        <StatCell title="Navigation" value={p.navigation} long />
+                        <StatCell title="Suction" value={p.suction} />
+                        <StatCell title="Mop type" value={p.mopType} long />
+                      </div>
 
-                    {/* CTAs — flera retailers */}
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {retailLinks(p).map((link) => (
-                        <a
-                          key={link.label}
-                          href={link.href}
-                          rel="nofollow sponsored noopener"
-                          target="_blank"
-                          className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                        >
-                          {link.label}
-                        </a>
-                      ))}
+                      {/* CTA-knappar m/priser */}
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {retailButtons(p, offers).map((link) => (
+                          <a
+                            key={link.label}
+                            href={link.href}
+                            rel="nofollow sponsored noopener"
+                            target="_blank"
+                            className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                          >
+                            Buy at {link.label}
+                          </a>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Höger: Ranking-panel */}
-              <div className="md:col-span-4 lg:col-span-3">
-                <RankingPanel
-                  spec={p.scores?.spec}
-                  review={p.scores?.review}
-                  value={p.scores?.value}
-                  overall={p.scores?.overall}
-                  prevRank={p.prevRank}
-                />
+                {/* Höger: Ranking-panel */}
+                <div className="md:col-span-4 lg:col-span-3">
+                  <RankingPanel
+                    spec={p.scores?.spec}
+                    review={p.scores?.review}
+                    value={p.scores?.value}
+                    overall={p.scores?.overall}
+                    prevRank={p.prevRank}
+                  />
+                </div>
               </div>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ol>
     </section>
   );
@@ -275,16 +287,53 @@ function BandList({
 export default async function Page() {
   const { premium = [], performance = [], budget = [] } = (await getProducts()) as any;
 
+  // 1) Bygg upp unik lista med namn att slå upp
+  const uniqueNames = Array.from(
+    new Set([...premium, ...performance, ...budget].map((p: any) => p?.name).filter(Boolean))
+  ) as string[];
+
+  // 2) Hämta offers (priser + thumbnail) via SerpAPI parallellt (cache 6 h)
+  const results = await Promise.allSettled(uniqueNames.map((n) => fetchShoppingOffers(n)));
+
+  // 3) Mappa tillbaka till name → offers / image
+  const offersByName = new Map<string, import("@/app/lib/serpapi").Offers>();
+  const imagesByName = new Map<string, string | undefined>();
+  uniqueNames.forEach((name, i) => {
+    const r = results[i];
+    if (r.status === "fulfilled" && r.value) {
+      offersByName.set(name, r.value);
+      if (r.value.image) imagesByName.set(name, r.value.image);
+    }
+  });
+
   return (
     <main className="min-h-screen bg-white">
       {/* Top section */}
       <HeaderFromDesign />
 
-      {/* Banded lists */}
+      {/* Lists — tighter spacing, bilder via SerpAPI, knappar med priser */}
       <section className="bg-slate-50/50">
-        <BandList items={premium} anchor="premium" bandLabel="Premium" />
-        <BandList items={performance} anchor="performance" bandLabel="Performance" />
-        <BandList items={budget} anchor="budget" bandLabel="Budget" />
+        <BandList
+          items={premium}
+          anchor="premium"
+          bandLabel="Premium"
+          offersByName={offersByName}
+          imagesByName={imagesByName}
+        />
+        <BandList
+          items={performance}
+          anchor="performance"
+          bandLabel="Performance"
+          offersByName={offersByName}
+          imagesByName={imagesByName}
+        />
+        <BandList
+          items={budget}
+          anchor="budget"
+          bandLabel="Budget"
+          offersByName={offersByName}
+          imagesByName={imagesByName}
+        />
 
         <section id="compare" className="mx-auto max-w-6xl px-4 pt-8 pb-24">
           <div className="mb-3 flex items-center justify-between">
