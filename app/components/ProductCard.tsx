@@ -12,8 +12,12 @@ export default function ProductCard({ product }: { product: any }) {
     [product?.brand, product?.model].filter(Boolean).join(" ") ||
     "Unknown model";
 
+  // OBS: Denna rad visar pris under rubriken (ej på knapparna).
+  // Du ville bara ta bort priser på knapparna, så vi låter denna stå kvar.
+  // Säg till om du vill att jag tar bort denna också.
   const price = product?.price_gbp ?? product?.price ?? undefined;
 
+  // Bild (tillfällig placeholder om ingen giltig URL)
   const placeholder = `https://placehold.co/240x240/png?text=${encodeURIComponent(
     name.slice(0, 24)
   )}`;
@@ -21,21 +25,25 @@ export default function ProductCard({ product }: { product: any }) {
     product?.image && isHttp(product.image) ? product.image : placeholder;
   const alt = name;
 
+  // Läs in retailers från produktdatan (pris ignoreras)
   const retailers: Retailer[] = (() => {
     try {
-      if (Array.isArray(product?.affiliate_retailers)) return product.affiliate_retailers;
+      if (Array.isArray(product?.affiliate_retailers))
+        return product.affiliate_retailers;
       if (typeof product?.affiliate_retailers_json === "string")
         return JSON.parse(product.affiliate_retailers_json);
-      if (Array.isArray(product?.affiliate_retailers_json)) return product?.affiliate_retailers_json;
+      if (Array.isArray(product?.affiliate_retailers_json))
+        return product?.affiliate_retailers_json;
       return [];
     } catch {
       return [];
     }
   })();
 
+  // Bygg knapp-lista utan någon pristext
   const buttons: Retailer[] = (
     retailers.length
-      ? retailers
+      ? retailers.map((r) => ({ name: r.name, url: r.url })) // ta bort ev. prisfält helt
       : [
           { name: "Amazon", url: amazonSearchFallback(name) },
           { name: "Brand store", url: "#" },
@@ -78,9 +86,11 @@ export default function ProductCard({ product }: { product: any }) {
               key={i}
               href={finalUrl}
               target="_blank"
-              rel="nofollow sponsored noopener noreferrer"
+              // Ta bort "sponsored" tills du är affiliate
+              rel="nofollow noopener noreferrer"
               className="rounded-lg border px-3 py-2 text-sm font-medium hover:bg-gray-50"
             >
+              {/* Inga priser här, endast butiksnamn */}
               Buy at {r.name}
             </a>
           );
