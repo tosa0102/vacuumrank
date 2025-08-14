@@ -1,4 +1,4 @@
-// app/robot-vacuums/page.tsx — TOP SECTION (clean + stable)
+// app/robot-vacuums/page.tsx — TOP SECTION (direct-image, no proxy)
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -26,19 +26,10 @@ const LOGO_SRC = "/rankpilot-logo.jpg"; // lägg i /public
 const HERO_DATE = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(new Date());
 const GBP = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
 
-// Hjälpare
-const isHttp = (s?: string) => !!s && /^https?:\/\//i.test(s || "");
-function toProxy(src?: string) {
-  if (!src) return undefined;
-  return isHttp(src) ? `/api/img?u=${encodeURIComponent(src)}` : src;
-}
-
 function HeaderFromDesign() {
   return (
     <header className="mx-auto w-full max-w-6xl px-4 pt-6">
-      {/* Rad: större logo vänster, titelkluster centrerat */}
       <div className="grid items-center gap-4 md:grid-cols-12">
-        {/* Logo only — större, ingen ring */}
         <div className="md:col-span-3">
           <div className="relative h-28 w-28 sm:h-32 sm:w-32">
             <Image
@@ -51,8 +42,6 @@ function HeaderFromDesign() {
             />
           </div>
         </div>
-
-        {/* Centrerad H1 + underrad + pill-knapp */}
         <div className="md:col-span-9 text-center">
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
             Best Robot Vacuums in the UK <span className="font-medium">({HERO_DATE})</span>
@@ -72,7 +61,6 @@ function HeaderFromDesign() {
         </div>
       </div>
 
-      {/* Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="mt-4 text-sm text-slate-500">
         <div className="flex items-center gap-1.5">
           <a href="/" className="hover:text-slate-700">Home</a>
@@ -81,7 +69,6 @@ function HeaderFromDesign() {
         </div>
       </nav>
 
-      {/* Sektionstitel */}
       <div className="mt-4">
         <h2 className="text-2xl font-semibold text-slate-900">Top picks</h2>
       </div>
@@ -89,10 +76,9 @@ function HeaderFromDesign() {
   );
 }
 
-/** Produktbild: <img> via proxy (utan event-handlers, kompatibel med Server Components) */
+/** Produktbild: enkel <img> med DIREKT URL (ingen proxy) */
 function ProductImage({ src, alt }: { src?: string; alt: string }) {
-  const finalSrc = toProxy(src);
-  if (!finalSrc) {
+  if (!src) {
     return (
       <div className="h-28 w-28 rounded-xl bg-slate-100 flex items-center justify-center text-slate-300">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -104,7 +90,7 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
   // eslint-disable-next-line @next/next/no-img-element
   return (
     <img
-      src={finalSrc}
+      src={src}
       alt={alt}
       referrerPolicy="no-referrer"
       className="h-28 w-28 rounded-xl bg-white object-contain p-2"
