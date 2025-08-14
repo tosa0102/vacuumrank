@@ -198,4 +198,106 @@ function BandList({
   items: any[];
   anchor: string;
   bandLabel: string;
+}) {
+  return (
+    <section id={anchor} className="mx-auto max-w-6xl px-4 pt-4 pb-2">
+      {/* (Go to Compare →) borttagen enligt önskemål */}
+
+      {/* Tätt mellan korten */}
+      <ol className="space-y-3 md:space-y-4">
+        {items.map((p: any, idx: number) => (
+          <li
+            key={p.id ?? idx}
+            className="relative rounded-3xl border border-slate-200 bg-white p-3 shadow-sm md:p-4"
+          >
+            {/* Liten etikett: “Premium #1” etc. */}
+            <span className="absolute -top-2 left-4 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
+              {bandLabel} <span className="text-slate-500">#{idx + 1}</span>
+            </span>
+
+            <div className="grid gap-4 md:grid-cols-12">
+              {/* Vänster: bild + namn + info-rad + CTAs */}
+              <div className="md:col-span-8 lg:col-span-9">
+                <div className="flex items-start gap-5">
+                  <ProductImage src={p.image} alt={p.name ?? "Robot vacuum"} />
+
+                  <div className="min-w-0 w-full">
+                    {/* Namn */}
+                    <h3 className="truncate text-[17px] font-semibold text-slate-900 md:text-lg">
+                      {p.name ?? "Model"}
+                    </h3>
+
+                    {/* INFO-RADEN — direkt under namn */}
+                    <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                      <StatCell title="Price" value={p.price ?? p.priceText} />
+                      <StatCell title="Base" value={p.base ?? p.dock} long />
+                      <StatCell title="Navigation" value={p.navigation} long />
+                      <StatCell title="Suction" value={p.suction} />
+                      <StatCell title="Mop type" value={p.mopType} long />
+                    </div>
+
+                    {/* CTAs — flera retailers */}
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {retailLinks(p).map((link) => (
+                        <a
+                          key={link.label}
+                          href={link.href}
+                          rel="nofollow sponsored noopener"
+                          target="_blank"
+                          className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                        >
+                          {link.label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Höger: Ranking-panel */}
+              <div className="md:col-span-4 lg:col-span-3">
+                <RankingPanel
+                  spec={p.scores?.spec}
+                  review={p.scores?.review}
+                  value={p.scores?.value}
+                  overall={p.scores?.overall}
+                  prevRank={p.prevRank}
+                />
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+export default async function Page() {
+  const { premium = [], performance = [], budget = [] } = (await getProducts()) as any;
+
+  return (
+    <main className="min-h-screen bg-white">
+      {/* Top section */}
+      <HeaderFromDesign />
+
+      {/* Banded lists */}
+      <section className="bg-slate-50/50">
+        <BandList items={premium} anchor="premium" bandLabel="Premium" />
+        <BandList items={performance} anchor="performance" bandLabel="Performance" />
+        <BandList items={budget} anchor="budget" bandLabel="Budget" />
+
+        <section id="compare" className="mx-auto max-w-6xl px-4 pt-8 pb-24">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-slate-900">Compare</h2>
+            <a href="#top" className="text-sm font-medium text-slate-700 hover:text-slate-900">Back to top ↑</a>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+            <CompareInline />
+          </div>
+        </section>
+      </section>
+
+      <CompareBar />
+    </main>
+  );
 }
