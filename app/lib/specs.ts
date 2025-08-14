@@ -1,5 +1,8 @@
 // app/lib/specs.ts
-import { brandSources, specFieldMap } from "./spec-sources";
+// Prioritet: Tillverkare (whitelist) → Sekundära källor.
+// Ingen fallback till data.json i UI; om inget hittas visas "–".
+
+import { BRAND_SOURCES, SECONDARY_SOURCES, SPEC_FIELD_MAP } from "./spec-sources";
 import { searchAndExtractSpecs } from "./specs-scraper";
 
 export async function fetchProductSpecs({
@@ -11,40 +14,31 @@ export async function fetchProductSpecs({
   model?: string;
   name?: string;
 }) {
-  if (!brand || !model) {
-    console.warn("fetchProductSpecs: saknar brand eller model", name);
-    return {};
-  }
+  const qBase =
+    (brand && model) ? `${brand} ${model}` :
+    (brand && name) ? `${brand} ${name}` :
+    name ?? "";
+  if (!qBase) return {};
 
-  const brandKey = brand.toLowerCase();
-  const sources = brandSources[brandKey] ?? [];
-  const queries = sources.length
-    ? [`${brand} ${model} site:${sources.join(" OR site:")}`]
-    : [`${brand} ${model}`];
+  // 1) Tillverkare — whitelistas
+  const bKey = (brand ?? "").toLowerCase();
+  const domains = BRAND_SOURCES[bKey] ?? [];
+  const manuQueries = domains.length
+    ? [`${qBase} site:${domains.join(" OR site:")}`]
+    : [`${qBase}`]; // om vi inte har en känd domän, sök brett
 
-  // Först: försök tillverkarens egna whitelistasidor
-  let specs = await searchAndExtractSpecs({ queries, fields: specFieldMap });
+  let specs = await searchAndExtractSpecs({ queries: manuQueries });
   if (hasAllSpecs(specs)) return specs;
 
-  // Sekundära källor om officiell sida saknar något
-  const secondaryDomains = [
-    "currys.co.uk",
-    "ao.com",
-    "argos.co.uk",
-    "very.co.uk",
-    "johnlewis.com",
-  ];
-  const secondaryQueries = [`${brand} ${model} site:${secondaryDomains.join(" OR site:")}`];
-  const secondarySpecs = await searchAndExtractSpecs({
-    queries: secondaryQueries,
-    fields: specFieldMap,
-  });
+  // 2) Sekundära källor (UK retailers / datablad)
+  const secQueries = [`${qBase} site:${SECONDARY_SOURCES.join(" OR site:")}`];
+  const secondary = await searchAndExtractSpecs({ queries: secQueries });
 
-  // Kombinera officiella + sekundära (officiella tar företräde)
-  specs = { ...secondarySpecs, ...specs };
+  // Officiell info prioriteras om den finns, annars sekundär
+  specs = { ...secondary, ...specs };
   return specs;
 }
 
 function hasAllSpecs(specs: Record<string, any>) {
-  return Object.keys(specFieldMap).every((k) => Boolean(specs[k]));
+  return Object.keys(SPEC_FIELD_MAP).every((k) => Boolean(specs[k]));
 }
