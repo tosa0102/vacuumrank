@@ -79,8 +79,7 @@ function HeaderFromDesign() {
   );
 }
 
-
-// ——— REST OF PAGE (unchanged layout; we will refine in later steps) ———
+// ——— REST OF PAGE (TL;DR removed; clean structure) ———
 function ScorePill({ label, value }: { label: string; value?: number | string }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-xs font-medium text-slate-700">
@@ -122,43 +121,7 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
   );
 }
 
-function TLDRWinners({ winners }: { winners: any[] }) {
-  return (
-    <section id="winners" className="mx-auto max-w-6xl px-4 pt-2 pb-6 md:pb-8">
-      <h2 className="text-xl font-bold text-slate-900">TL;DR winners</h2>
-      <p className="mt-1 text-sm text-slate-600">Premium • Performance • Budget</p>
-      <div className="mt-4 grid gap-4 md:grid-cols-3">
-        {winners.map((p, i) => (
-          <article key={p.id ?? i} className="group rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
-            <div className="flex items-center gap-4">
-              <RankBadge n={i + 1} />
-              <div className="min-w-0">
-                <h3 className="truncate text-base font-semibold text-slate-900">{p.name ?? "Model"}</h3>
-                <p className="text-sm text-slate-500">{p.bandLabel ?? ["Premium", "Performance", "Budget"][i]}</p>
-              </div>
-              <ProductImage src={p.image} alt={p.name ?? "Robot vacuum"} />
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <ScorePill label="Overall" value={p.scores?.overall} />
-              <ScorePill label="Spec" value={p.scores?.spec} />
-              <ScorePill label="Review" value={p.scores?.review} />
-              <ScorePill label="Value" value={p.scores?.value} />
-            </div>
-            <div className="mt-4 flex items-center justify-between text-sm">
-              <span className="text-slate-600">Street price</span>
-              <span className="font-semibold text-slate-900">{p.price ?? "—"}</span>
-            </div>
-            <div className="mt-3">
-              <a href={p.buyUrl ?? "#"} className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-black">
-                Buy
-              </a>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
+// NOTE: TL;DRWinners component is intentionally removed (no hidden code, no placeholders).
 
 function BandList({ title, items, anchor }: { title: string; items: any[]; anchor: string }) {
   return (
@@ -212,19 +175,18 @@ function BandList({ title, items, anchor }: { title: string; items: any[]; ancho
 
 export default async function Page() {
   const { premium = [], performance = [], budget = [] } = (await getProducts()) as any;
-  const winners = [premium?.[0], performance?.[0], budget?.[0]].filter(Boolean);
 
   return (
     <main className="min-h-screen bg-white">
-      {/* NEW: top section per screenshot */}
+      {/* Top section */}
       <HeaderFromDesign />
 
-      {/* Below: unchanged sections (we'll refine in later steps) */}
+      {/* Lists (no TL;DR block, no chips under Top picks) */}
       <section className="bg-slate-50/50">
-        <TLDRWinners winners={winners} />
         <BandList title="Premium" items={premium} anchor="premium" />
         <BandList title="Performance" items={performance} anchor="performance" />
         <BandList title="Budget" items={budget} anchor="budget" />
+
         <section id="compare" className="mx-auto max-w-6xl px-4 pt-8 pb-24">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900">Compare</h2>
@@ -240,3 +202,4 @@ export default async function Page() {
     </main>
   );
 }
+
