@@ -5,7 +5,6 @@ import Image from "next/image";
 import { getProducts } from "@/app/lib/products";
 import type { ProductLike } from "@/app/lib/serpapi";
 import { fetchShoppingOffersSmart } from "@/app/lib/serpapi";
-// ➕ NY: automatiska specifikationer (tillverkare → sekundära källor)
 import { fetchProductSpecs } from "@/app/lib/specs";
 
 export const revalidate = 86_400;
@@ -29,7 +28,12 @@ function isAmazonHost(u?: string) {
   if (!u) return false;
   try {
     const h = new URL(u).hostname.toLowerCase();
-    return h.includes("media-amazon.") || h.includes("images-amazon.") || h.endsWith("amazon.com") || h.endsWith("amazon.co.uk");
+    return (
+      h.includes("media-amazon.") ||
+      h.includes("images-amazon.") ||
+      h.endsWith("amazon.com") ||
+      h.endsWith("amazon.co.uk")
+    );
   } catch {
     return false;
   }
@@ -49,8 +53,7 @@ function HeaderFromDesign() {
             Best Robot Vacuums in the UK <span className="font-medium">({HERO_DATE})</span>
           </h1>
           <p className="mt-1 text-sm md:text-base text-slate-600">
-            <span className="font-medium">Premium</span> • <span className="font-medium">Performance</span> •{" "}
-            <span className="font-medium">Budget</span>
+            <span className="font-medium">Premium</span> • <span className="font-medium">Performance</span> • <span className="font-medium">Budget</span>
             <span className="mx-2">—</span> desk-tested and ranked
           </p>
           <div className="mt-3 flex justify-center">
@@ -66,9 +69,7 @@ function HeaderFromDesign() {
 
       <nav aria-label="Breadcrumb" className="mt-4 text-sm text-slate-500">
         <div className="flex items-center gap-1.5">
-          <a href="/" className="hover:text-slate-700">
-            Home
-          </a>
+          <a href="/" className="hover:text-slate-700">Home</a>
           <span className="text-slate-400">/</span>
           <span className="font-medium text-slate-700">Robot vacuums</span>
         </div>
@@ -86,8 +87,7 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
     return (
       <div className="h-28 w-28 rounded-xl bg-slate-100 flex items-center justify-center text-slate-300">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <rect x="3" y="3" width="18" height="14" rx="2" />
-          <path d="m3 14 4-4 3 3 5-5 3 3" />
+          <rect x="3" y="3" width="18" height="14" rx="2" /><path d="m3 14 4-4 3 3 5-5 3 3" />
         </svg>
       </div>
     );
@@ -100,63 +100,29 @@ function StatCell({ title, value, long = false }: { title: string; value?: strin
   return (
     <div className="min-w-0">
       <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{title}</div>
-      <div
-        className={
-          "mt-1 text-[13px] font-medium text-slate-900 break-words " +
-          (long ? "whitespace-pre-line leading-5 min-h-[72px] md:min-h-[80px]" : "leading-5")
-        }
-      >
+      <div className={"mt-1 text-[13px] font-medium text-slate-900 break-words " + (long ? "whitespace-pre-line leading-5 min-h-[72px] md:min-h-[80px]" : "leading-5")}>
         {value ?? "–"}
       </div>
     </div>
   );
 }
 
-function RankingPanel({
-  spec,
-  review,
-  value,
-  overall,
-  prevRank,
-}: {
-  spec?: number | string;
-  review?: number | string;
-  value?: number | string;
-  overall?: number | string;
-  prevRank?: number | string;
-}) {
+function RankingPanel({ spec, review, value, overall, prevRank }: { spec?: number | string; review?: number | string; value?: number | string; overall?: number | string; prevRank?: number | string; }) {
   return (
     <aside className="rounded-2xl border border-slate-200 bg-white p-3 md:p-4">
-      <div className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[12px] font-semibold text-slate-700">
-        Ranking
-      </div>
+      <div className="mb-2 inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[12px] font-semibold text-slate-700">Ranking</div>
       <div className="grid grid-cols-4 gap-2 text-[13px] md:text-sm">
-        <div className="text-slate-600">
-          <div className="text-[11px] uppercase tracking-wide text-slate-500">Spec</div>
-          <div className="font-medium">{spec ?? "–"}</div>
-        </div>
-        <div className="text-slate-600">
-          <div className="text-[11px] uppercase tracking-wide text-slate-500">Review</div>
-          <div className="font-medium">{review ?? "–"}</div>
-        </div>
-        <div className="text-slate-600">
-          <div className="text-[11px] uppercase tracking-wide text-slate-500">Value</div>
-          <div className="font-medium">{value ?? "–"}</div>
-        </div>
-        <div className="text-slate-900">
-          <div className="text-[11px] uppercase tracking-wide text-slate-500">Overall</div>
-          <div className="text-[15px] font-semibold md:text-base">{overall ?? "–"}</div>
-        </div>
+        <div className="text-slate-600"><div className="text-[11px] uppercase tracking-wide text-slate-500">Spec</div><div className="font-medium">{spec ?? "–"}</div></div>
+        <div className="text-slate-600"><div className="text-[11px] uppercase tracking-wide text-slate-500">Review</div><div className="font-medium">{review ?? "–"}</div></div>
+        <div className="text-slate-600"><div className="text-[11px] uppercase tracking-wide text-slate-500">Value</div><div className="font-medium">{value ?? "–"}</div></div>
+        <div className="text-slate-900"><div className="text-[11px] uppercase tracking-wide text-slate-500">Overall</div><div className="text-[15px] font-semibold md:text-base">{overall ?? "–"}</div></div>
       </div>
-      <div className="mt-2 text-[12px] text-slate-600">
-        <span className="font-medium">Ranking (previous)</span>{" "}
-        <span>{overall ? "1" : "–"} {prevRank ? `(${prevRank})` : ""}</span>
-      </div>
+      <div className="mt-2 text-[12px] text-slate-600"><span className="font-medium">Ranking (previous)</span> <span>{overall ? "1" : "–"} {prevRank ? `(${prevRank})` : ""}</span></div>
     </aside>
   );
 }
 
-// Knappar utan pris
+// CTA-knappar (utan pris)
 function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
   const q = encodeURIComponent(p?.name ?? "");
   const v = offers?.vendors ?? {};
@@ -172,17 +138,13 @@ function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
   return buttons;
 }
 
-function isOkImage(u?: string) {
-  return u && !isAmazonHost(u) ? u : undefined;
-}
-function keyFor(p: any) {
-  return [p.brand, p.model, p.name, p.ean, p.asin].filter(Boolean).join("|").toLowerCase();
-}
+function isOkImage(u?: string) { return u && !isAmazonHost(u) ? u : undefined; }
+function keyFor(p: any) { return [p.brand, p.model, p.name, p.ean, p.asin].filter(Boolean).join("|").toLowerCase(); }
 
-// ➕ (valfritt men säkert): normalisera suction till “<tal> Pa” ifall sekundärkälla skulle ge “8000”
-function formatSuction(value?: string | number): string | undefined {
-  if (value === undefined || value === null || value === "") return undefined;
-  const s = String(value).trim();
+// Säker formattering av suction → "<tal> Pa" (om inte redan angivet)
+function formatSuction(v?: string | number): string | undefined {
+  if (v === undefined || v === null || v === "") return undefined;
+  const s = String(v).trim();
   if (/\bpa\b/i.test(s)) return s.replace(/\bpa\b/i, "Pa");
   const digits = s.replace(/[^\d.]/g, "");
   return digits ? `${digits} Pa` : s;
@@ -194,15 +156,12 @@ function BandList({
   bandLabel,
   offersByKey,
   imagesByKey,
-  // ➕ NY prop: specsByKey
   specsByKey,
 }: {
-  items: any[];
-  anchor: string;
-  bandLabel: string;
+  items: any[]; anchor: string; bandLabel: string;
   offersByKey: Map<string, import("@/app/lib/serpapi").Offers>;
   imagesByKey: Map<string, string | undefined>;
-  specsByKey: Map<string, Awaited<ReturnType<typeof fetchProductSpecs>>>;
+  specsByKey: Map<string, Record<string, any> | undefined>;
 }) {
   return (
     <section id={anchor} className="mx-auto max-w-6xl px-4 pt-3 pb-1">
@@ -213,8 +172,7 @@ function BandList({
           const dynImage = imagesByKey.get(key);
           const displayImage = isOkImage(p?.image) || isOkImage(dynImage);
 
-          // ➕ Hämta auto-specs för denna nyckel (tillverkare → sekundär, ingen data.json-fallback)
-          const spec = specsByKey.get(key);
+          const spec = specsByKey.get(key); // kan vara undefined → UI visar "–" då
 
           return (
             <li key={p.id ?? idx} className="relative rounded-3xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
@@ -228,7 +186,7 @@ function BandList({
                     <div className="min-w-0 w-full">
                       <h3 className="truncate text-[17px] font-semibold text-slate-900 md:text-lg">{p.name ?? "Model"}</h3>
 
-                      {/* Fakta-rad: Pris från befintlig data; övriga fält endast från automatiska specs */}
+                      {/* Fakta-rad: Price från befintlig data; övriga fält ENDAST från auto-specs */}
                       <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                         <StatCell title="Price" value={p.price ?? p.priceText} />
                         <StatCell title="Base" value={spec?.base} long />
@@ -239,13 +197,7 @@ function BandList({
 
                       <div className="mt-2 flex flex-wrap gap-2">
                         {retailButtons(p, offers).map((link) => (
-                          <a
-                            key={link.label}
-                            href={link.href}
-                            rel="nofollow noopener"
-                            target="_blank"
-                            className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                          >
+                          <a key={link.label} href={link.href} rel="nofollow noopener" target="_blank" className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50">
                             {link.label}
                           </a>
                         ))}
@@ -255,13 +207,7 @@ function BandList({
                 </div>
 
                 <div className="md:col-span-4 lg:col-span-3">
-                  <RankingPanel
-                    spec={p.scores?.spec}
-                    review={p.scores?.review}
-                    value={p.scores?.value}
-                    overall={p.scores?.overall}
-                    prevRank={p.prevRank}
-                  />
+                  <RankingPanel spec={p.scores?.spec} review={p.scores?.review} value={p.scores?.value} overall={p.scores?.overall} prevRank={p.prevRank} />
                 </div>
               </div>
             </li>
@@ -279,13 +225,11 @@ export default async function Page() {
   for (const p of all) byKey.set(keyFor(p), p);
   const keys = Array.from(byKey.keys());
 
-  // 1) SerpAPI: bild + vendor-länkar (exkl. Amazon-bildhotlink), oförändrat
-  const results = await Promise.allSettled(
-    keys.map((k) => {
-      const p = byKey.get(k) as ProductLike;
-      return fetchShoppingOffersSmart(p);
-    })
-  );
+  // 1) SerpAPI: bild + vendor-länkar (Amazon-bilder filtreras)
+  const results = await Promise.allSettled(keys.map((k) => {
+    const p = byKey.get(k) as ProductLike;
+    return fetchShoppingOffersSmart(p);
+  }));
 
   const offersByKey = new Map<string, import("@/app/lib/serpapi").Offers>();
   const imagesByKey = new Map<string, string | undefined>();
@@ -297,14 +241,13 @@ export default async function Page() {
     }
   });
 
-  // 2) ➕ NYTT: Automatiska specs (tillverkare → sekundära källor). Ingen fallback till data.json.
-  const specResults = await Promise.allSettled(
-    keys.map((k) => {
-      const p = byKey.get(k) as any;
-      return fetchProductSpecs({ brand: p.brand, model: p.model, name: p.name });
-    })
-  );
-  const specsByKey = new Map<string, Awaited<ReturnType<typeof fetchProductSpecs>>>();
+  // 2) Auto-specs: Tillverkare (whitelist) → Sekundära källor. Ingen fallback till data.json.
+  const specResults = await Promise.allSettled(keys.map((k) => {
+    const p = byKey.get(k) as any;
+    return fetchProductSpecs({ brand: p.brand, model: p.model, name: p.name });
+  }));
+
+  const specsByKey = new Map<string, Record<string, any> | undefined>();
   keys.forEach((k, i) => {
     const r = specResults[i];
     if (r.status === "fulfilled") specsByKey.set(k, r.value);
@@ -321,9 +264,7 @@ export default async function Page() {
         <section id="compare" className="mx-auto max-w-6xl px-4 pt-8 pb-24">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900">Compare</h2>
-            <a href="#top" className="text-sm font-medium text-slate-700 hover:text-slate-900">
-              Back to top ↑
-            </a>
+            <a href="#top" className="text-sm font-medium text-slate-700 hover:text-slate-900">Back to top ↑</a>
           </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
             <CompareInline />
