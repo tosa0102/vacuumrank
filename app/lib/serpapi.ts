@@ -38,9 +38,18 @@ function normalizeThumb(u?: string): string | undefined {
   let s = u.trim();
   if (s.startsWith("//")) s = "https:" + s;
   if (s.startsWith("http://")) s = "https://" + s.slice(7);
-  // Tillåt endast https/data: (blocka konstiga scheman)
   if (s.startsWith("https://") || s.startsWith("data:image/")) return s;
   return undefined;
+}
+
+function isAmazonHost(u?: string): boolean {
+  if (!u) return false;
+  try {
+    const h = new URL(u).hostname.toLowerCase();
+    return h.includes("media-amazon.com") || h.includes("images-amazon.com") || h.endsWith("amazon.com");
+  } catch {
+    return false;
+  }
 }
 
 const STOPWORDS = ["filter","filters","bag","bags","spare","spares","replacement","refill","mop cloth","mop pads","dust bag","accessories"];
@@ -49,7 +58,7 @@ function looksLikeAccessory(title?: string) {
   return STOPWORDS.some((w) => t.includes(w));
 }
 function tokenise(s: string) {
-  return s.toLowerCase().split(/[\s\-_/]+/).filter(Boolean);
+  return s.toLowerCase().split(/[\s\\-_/]+/).filter(Boolean);
 }
 
 // ---------------- query builder ----------------
@@ -92,6 +101,9 @@ export async function fetchShoppingOffers(query: string, p?: ProductLike): Promi
     const qTokens = tokenise(query);
     const vendorWeight: Record<string, number> = { amazon: 3, currys: 2, argos: 2, ao: 2 };
 
+    let firstThumb: string | undefined;
+    let firstNonAmazonThumb: string | undefined;
+
     const scored = results
       .map((r) => {
         const title = String(r?.title ?? "");
@@ -104,28 +116,28 @@ export async function fetchShoppingOffers(query: string, p?: ProductLike): Promi
         if (looksLikeAccessory(title)) score -= 5;
         score += vendorWeight[vendorKey] ?? 0;
 
-        return { r, vendorKey, score };
+        const rawThumb = (r?.thumbnail as string | undefined) ?? (r?.image as string | undefined);
+        const thumb = normalizeThumb(rawThumb);
+        if (thumb && !firstThumb) firstThumb = thumb;
+        if (thumb && !firstNonAmazonThumb && !isAmazonHost(thumb)) firstNonAmazonThumb = thumb;
+
+        return { r, vendorKey, thumb, score };
       })
       .sort((a, b) => b.score - a.score);
 
     const offers: Offers = { vendors: {} };
 
     for (const { r, vendorKey } of scored) {
-      const rawThumb = (r?.thumbnail as string | undefined) ?? (r?.image as string | undefined);
-      const thumb = normalizeThumb(rawThumb);
-
-      if (vendorKey === "other") {
-        if (!offers.image && thumb) offers.image = thumb;
-        continue;
-      }
+      if (vendorKey === "other") continue; // vi väljer bild separat nedan
 
       const vendor: keyof Offers["vendors"] = vendorKey;
       const price = r?.extracted_price ?? parsePrice(r?.price);
       const link = (r?.link as string | undefined) ?? (r?.product_link as string | undefined);
-
       if (!offers.vendors[vendor]) offers.vendors[vendor] = { url: link, price };
-      if ((vendor === "amazon" && thumb) || (!offers.image && thumb)) offers.image = thumb;
     }
+
+    // Bildval: föredra icke‑Amazon; annars första tillgängliga
+    offers.image = firstNonAmazonThumb || firstThumb;
 
     return offers;
   } catch (err) {
