@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { getProducts } from "@/app/lib/products";
-import { fetchShoppingOffers } from "@/app/lib/serpapi";
+import type { ProductLike } from "@/app/lib/serpapi";
+import { fetchShoppingOffersSmart } from "@/app/lib/serpapi";
 
 export const revalidate = 86_400; // uppdatera datumet (månad/år) dagligen
 
@@ -24,6 +25,14 @@ const CTA_HREF = "/best-robot-vacuum-2025";
 const LOGO_SRC = "/rankpilot-logo.jpg"; // lägg i /public
 const HERO_DATE = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(new Date());
 const GBP = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+
+// Hjälpare
+const isHttp = (s?: string) => !!s && /^https?:\/\//i.test(s || "");
+function proxied(src?: string) {
+  if (!src) return undefined;
+  // Endast externa URL:er proxas – lokala /… laddas direkt
+  return isHttp(src) ? `/api/img?u=${encodeURIComponent(src)}` : src;
+}
 
 function HeaderFromDesign() {
   return (
@@ -81,30 +90,30 @@ function HeaderFromDesign() {
   );
 }
 
-// ——— REST OF PAGE (smart SerpAPI; hooks för brand/model/ean/asin) ———
-import type { ProductLike } from "@/app/lib/serpapi";
-import { fetchShoppingOffersSmart } from "@/app/lib/serpapi";
-
 function ProductImage({ src, alt }: { src?: string; alt: string }) {
-  if (src && (src.startsWith("/") || src.includes("m.media-amazon.com"))) {
+  if (!src) return <div className="h-28 w-28 rounded-xl bg-slate-100" />;
+
+  // Lokala vägar (börjar med "/") renderas via next/image
+  if (src.startsWith("/")) {
     return (
       <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-white">
         <Image src={src} alt={alt} fill className="object-contain p-2" sizes="112px" />
       </div>
     );
   }
-  if (src) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return (
-      <img
-        src={src}
-        alt={alt}
-        referrerPolicy="no-referrer"
-        className="h-28 w-28 rounded-xl bg-white object-contain p-2"
-      />
-    );
-  }
-  return <div className="h-28 w-28 rounded-xl bg-slate-100" />;
+
+  // Allt externt går via proxy för stabil inbäddning + caching
+  const p = proxied(src);
+  // eslint-disable-next-line @next/next/no-img-element
+  return (
+    <img
+      src={p}
+      alt={alt}
+      referrerPolicy="no-referrer"
+      className="h-28 w-28 rounded-xl bg-white object-contain p-2"
+      loading="lazy"
+    />
+  );
 }
 
 function StatCell({
@@ -183,7 +192,6 @@ function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
 
   const add = (vendor: "amazon" | "currys" | "argos" | "ao", label: string, fallback: string) => {
     const url = v[vendor]?.url ?? p?.links?.[vendor] ?? p?.[`${vendor}Url`] ?? fallback;
-    // Pris hämtas men används inte i knapptexten
     buttons.push({ label, href: url });
   };
 
@@ -194,7 +202,6 @@ function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
 
   return buttons;
 }
-
 
 function keyFor(p: any) {
   return [p.brand, p.model, p.name, p.ean, p.asin].filter(Boolean).join("|").toLowerCase();
@@ -220,7 +227,9 @@ function BandList({
           const key = keyFor(p);
           const offers = offersByKey.get(key);
           const dynImage = imagesByKey.get(key);
-          const displayImage = p.image || dynImage;
+          // Bildval: manuell bild om du redan har en; annars SerpAPI-bild
+          const chosen = p?.image && typeof p.image === "string" ? p.image : dynImage;
+          const displayImage = proxied(chosen);
 
           return (
             <li key={p.id ?? idx} className="relative rounded-3xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
@@ -247,7 +256,7 @@ function BandList({
                           <a
                             key={link.label}
                             href={link.href}
-                            rel="nofollow sponsored noopener"
+                            rel="nofollow noopener"
                             target="_blank"
                             className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
                           >
@@ -285,7 +294,7 @@ export default async function Page() {
   for (const p of all) byKey.set(keyFor(p), p);
   const keys = Array.from(byKey.keys());
 
-  // Hämta offers (bilder + priser) smart per unik nyckel
+  // Hämta offers (bilder) smart per unik nyckel
   const results = await Promise.allSettled(
     keys.map((k) => {
       const p = byKey.get(k) as ProductLike;
