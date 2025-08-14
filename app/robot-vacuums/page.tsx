@@ -85,8 +85,6 @@ function HeaderFromDesign() {
 import type { ProductLike } from "@/app/lib/serpapi";
 import { fetchShoppingOffersSmart } from "@/app/lib/serpapi";
 
-const GBP = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
-
 function ProductImage({ src, alt }: { src?: string; alt: string }) {
   if (src && (src.startsWith("/") || src.includes("m.media-amazon.com"))) {
     return (
