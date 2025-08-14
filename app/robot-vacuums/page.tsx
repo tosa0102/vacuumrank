@@ -107,6 +107,25 @@ function StatCell({ title, value, long = false }: { title: string; value?: strin
   );
 }
 
+function ValueWithSource({ value, source }: { value?: string | number; source?: string }) {
+  if (value == null || value === "") return <>–</>;
+  const d = source ? new URL(source).hostname.replace(/^www\./, "") : undefined;
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span>{value}</span>
+      {d && (
+        <span
+          title={`Source: ${d}`}
+          aria-label={`Source: ${d}`}
+          className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 text-[10px] leading-none text-slate-500"
+        >
+          ⓘ
+        </span>
+      )}
+    </span>
+  );
+}
+
 function RankingPanel({ spec, review, value, overall, prevRank }: { spec?: number | string; review?: number | string; value?: number | string; overall?: number | string; prevRank?: number | string; }) {
   return (
     <aside className="rounded-2xl border border-slate-200 bg-white p-3 md:p-4">
@@ -189,10 +208,11 @@ function BandList({
                       {/* Fakta-rad: Price från befintlig data; övriga fält ENDAST från auto-specs */}
                       <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                         <StatCell title="Price" value={p.price ?? p.priceText} />
-                        <StatCell title="Base" value={spec?.base} long />
-                        <StatCell title="Navigation" value={spec?.navigation} long />
-                        <StatCell title="Suction" value={formatSuction(spec?.suction)} />
-                        <StatCell title="Mop type" value={spec?.mopType} long />
+                       <StatCell title="Base" value={<ValueWithSource value={spec?.base} source={spec?.sourceUrl} /> as any} long />
+                        <StatCell title="Navigation" value={<ValueWithSource value={spec?.navigation} source={spec?.sourceUrl} /> as any} long />
+                        <StatCell title="Suction" value={<ValueWithSource value={formatSuction(spec?.suction)} source={spec?.sourceUrl} /> as any} />
+                        <StatCell title="Mop type" value={<ValueWithSource value={spec?.mopType} source={spec?.sourceUrl} /> as any} long />
+
                       </div>
 
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -242,10 +262,19 @@ export default async function Page() {
   });
 
   // 2) Auto-specs: Tillverkare (whitelist) → Sekundära källor. Ingen fallback till data.json.
-  const specResults = await Promise.allSettled(keys.map((k) => {
+ const specResults = await Promise.allSettled(
+  keys.map((k) => {
     const p = byKey.get(k) as any;
-    return fetchProductSpecs({ brand: p.brand, model: p.model, name: p.name });
-  }));
+    const v = offersByKey.get(k);
+    const hintUrls = [
+      v?.vendors?.currys?.url,
+      v?.vendors?.argos?.url,
+      v?.vendors?.ao?.url,
+    ].filter(Boolean) as string[];
+    return fetchProductSpecs({ brand: p.brand, model: p.model, name: p.name, hintUrls });
+  })
+);
+
 
   const specsByKey = new Map<string, Record<string, any> | undefined>();
   keys.forEach((k, i) => {
