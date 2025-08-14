@@ -95,7 +95,14 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
   }
   if (src) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt={alt} className="h-28 w-28 rounded-xl bg-white object-contain p-2" />;
+    return (
+      <img
+        src={src}
+        alt={alt}
+        referrerPolicy="no-referrer"
+        className="h-28 w-28 rounded-xl bg-white object-contain p-2"
+      />
+    );
   }
   return <div className="h-28 w-28 rounded-xl bg-slate-100" />;
 }
