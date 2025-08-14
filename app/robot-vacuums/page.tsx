@@ -5,7 +5,7 @@ import Image from "next/image";
 import { getProducts } from "@/app/lib/products";
 import type { ProductLike } from "@/app/lib/serpapi";
 import { fetchShoppingOffersSmart } from "@/app/lib/serpapi";
-import { fetchProductSpecs } from "@/app/lib/specs";
+import SpecsCells, { StatCell as ClientStatCell } from "./SpecsCells";
 
 export const revalidate = 86_400;
 
@@ -28,12 +28,7 @@ function isAmazonHost(u?: string) {
   if (!u) return false;
   try {
     const h = new URL(u).hostname.toLowerCase();
-    return (
-      h.includes("media-amazon.") ||
-      h.includes("images-amazon.") ||
-      h.endsWith("amazon.com") ||
-      h.endsWith("amazon.co.uk")
-    );
+    return h.includes("media-amazon.") || h.includes("images-amazon.") || h.endsWith("amazon.com") || h.endsWith("amazon.co.uk");
   } catch {
     return false;
   }
@@ -107,25 +102,6 @@ function StatCell({ title, value, long = false }: { title: string; value?: strin
   );
 }
 
-function ValueWithSource({ value, source }: { value?: string | number; source?: string }) {
-  if (value == null || value === "") return <>–</>;
-  const d = source ? new URL(source).hostname.replace(/^www\./, "") : undefined;
-  return (
-    <span className="inline-flex items-center gap-1">
-      <span>{value}</span>
-      {d && (
-        <span
-          title={`Source: ${d}`}
-          aria-label={`Source: ${d}`}
-          className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 text-[10px] leading-none text-slate-500"
-        >
-          ⓘ
-        </span>
-      )}
-    </span>
-  );
-}
-
 function RankingPanel({ spec, review, value, overall, prevRank }: { spec?: number | string; review?: number | string; value?: number | string; overall?: number | string; prevRank?: number | string; }) {
   return (
     <aside className="rounded-2xl border border-slate-200 bg-white p-3 md:p-4">
@@ -160,27 +136,16 @@ function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
 function isOkImage(u?: string) { return u && !isAmazonHost(u) ? u : undefined; }
 function keyFor(p: any) { return [p.brand, p.model, p.name, p.ean, p.asin].filter(Boolean).join("|").toLowerCase(); }
 
-// Säker formattering av suction → "<tal> Pa" (om inte redan angivet)
-function formatSuction(v?: string | number): string | undefined {
-  if (v === undefined || v === null || v === "") return undefined;
-  const s = String(v).trim();
-  if (/\bpa\b/i.test(s)) return s.replace(/\bpa\b/i, "Pa");
-  const digits = s.replace(/[^\d.]/g, "");
-  return digits ? `${digits} Pa` : s;
-}
-
 function BandList({
   items,
   anchor,
   bandLabel,
   offersByKey,
   imagesByKey,
-  specsByKey,
 }: {
   items: any[]; anchor: string; bandLabel: string;
   offersByKey: Map<string, import("@/app/lib/serpapi").Offers>;
   imagesByKey: Map<string, string | undefined>;
-  specsByKey: Map<string, Record<string, any> | undefined>;
 }) {
   return (
     <section id={anchor} className="mx-auto max-w-6xl px-4 pt-3 pb-1">
@@ -190,8 +155,6 @@ function BandList({
           const offers = offersByKey.get(key);
           const dynImage = imagesByKey.get(key);
           const displayImage = isOkImage(p?.image) || isOkImage(dynImage);
-
-          const spec = specsByKey.get(key); // kan vara undefined → UI visar "–" då
 
           return (
             <li key={p.id ?? idx} className="relative rounded-3xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
@@ -205,14 +168,10 @@ function BandList({
                     <div className="min-w-0 w-full">
                       <h3 className="truncate text-[17px] font-semibold text-slate-900 md:text-lg">{p.name ?? "Model"}</h3>
 
-                      {/* Fakta-rad: Price från befintlig data; övriga fält ENDAST från auto-specs */}
+                      {/* Fakta-rad: Price SSR; övriga fält hämtas client-side via /api/specs */}
                       <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                         <StatCell title="Price" value={p.price ?? p.priceText} />
-                       <StatCell title="Base" value={<ValueWithSource value={spec?.base} source={spec?.sourceUrl} /> as any} long />
-                        <StatCell title="Navigation" value={<ValueWithSource value={spec?.navigation} source={spec?.sourceUrl} /> as any} long />
-                        <StatCell title="Suction" value={<ValueWithSource value={formatSuction(spec?.suction)} source={spec?.sourceUrl} /> as any} />
-                        <StatCell title="Mop type" value={<ValueWithSource value={spec?.mopType} source={spec?.sourceUrl} /> as any} long />
-
+                        <SpecsCells product={{ brand: p.brand, model: p.model, name: p.name }} offers={offers} />
                       </div>
 
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -225,7 +184,6 @@ function BandList({
                     </div>
                   </div>
                 </div>
-
                 <div className="md:col-span-4 lg:col-span-3">
                   <RankingPanel spec={p.scores?.spec} review={p.scores?.review} value={p.scores?.value} overall={p.scores?.overall} prevRank={p.prevRank} />
                 </div>
@@ -245,7 +203,7 @@ export default async function Page() {
   for (const p of all) byKey.set(keyFor(p), p);
   const keys = Array.from(byKey.keys());
 
-  // 1) SerpAPI: bild + vendor-länkar (Amazon-bilder filtreras)
+  // Bild + vendor-länkar (SerpAPI, SSR)
   const results = await Promise.allSettled(keys.map((k) => {
     const p = byKey.get(k) as ProductLike;
     return fetchShoppingOffersSmart(p);
@@ -261,34 +219,13 @@ export default async function Page() {
     }
   });
 
-  // 2) Auto-specs: Tillverkare (whitelist) → Sekundära källor. Ingen fallback till data.json.
- const specResults = await Promise.allSettled(
-  keys.map((k) => {
-    const p = byKey.get(k) as any;
-    const v = offersByKey.get(k);
-    const hintUrls = [
-      v?.vendors?.currys?.url,
-      v?.vendors?.argos?.url,
-      v?.vendors?.ao?.url,
-    ].filter(Boolean) as string[];
-    return fetchProductSpecs({ brand: p.brand, model: p.model, name: p.name, hintUrls });
-  })
-);
-
-
-  const specsByKey = new Map<string, Record<string, any> | undefined>();
-  keys.forEach((k, i) => {
-    const r = specResults[i];
-    if (r.status === "fulfilled") specsByKey.set(k, r.value);
-  });
-
   return (
     <main className="min-h-screen bg-white">
       <HeaderFromDesign />
       <section className="bg-slate-50/50">
-        <BandList items={premium} anchor="premium" bandLabel="Premium" offersByKey={offersByKey} imagesByKey={imagesByKey} specsByKey={specsByKey} />
-        <BandList items={performance} anchor="performance" bandLabel="Performance" offersByKey={offersByKey} imagesByKey={imagesByKey} specsByKey={specsByKey} />
-        <BandList items={budget} anchor="budget" bandLabel="Budget" offersByKey={offersByKey} imagesByKey={imagesByKey} specsByKey={specsByKey} />
+        <BandList items={premium} anchor="premium" bandLabel="Premium" offersByKey={offersByKey} imagesByKey={imagesByKey} />
+        <BandList items={performance} anchor="performance" bandLabel="Performance" offersByKey={offersByKey} imagesByKey={imagesByKey} />
+        <BandList items={budget} anchor="budget" bandLabel="Budget" offersByKey={offersByKey} imagesByKey={imagesByKey} />
 
         <section id="compare" className="mx-auto max-w-6xl px-4 pt-8 pb-24">
           <div className="mb-3 flex items-center justify-between">
