@@ -79,22 +79,13 @@ function HeaderFromDesign() {
   );
 }
 
-// ——— REST OF PAGE (TL;DR removed; banded list redesigned to match PDF) ———
+// ——— REST OF PAGE (PDF-aligned Top picks) ———
 function ScorePill({ label, value }: { label: string; value?: number | string }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-xs font-medium text-slate-700">
       <span className="text-[10px] uppercase tracking-wide text-slate-500">{label}</span>
       <span>{value ?? "–"}</span>
     </span>
-  );
-}
-
-function StatCell({ title, value }: { title: string; value?: string | number }) {
-  return (
-    <div className="min-w-0">
-      <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{title}</div>
-      <div className="mt-1 text-sm font-medium text-slate-900">{value ?? "–"}</div>
-    </div>
   );
 }
 
@@ -117,6 +108,31 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
   return (
     <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-white">
       <Image src={src} alt={alt} fill className="object-contain p-2" sizes="112px" />
+    </div>
+  );
+}
+
+function StatCell({
+  title,
+  value,
+  long = false,
+}: {
+  title: string;
+  value?: string | number;
+  /** long=true ger plats för 3–4 rader (för Base/Nav/Mop) */
+  long?: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{title}</div>
+      <div
+        className={
+          "mt-1 text-sm font-medium text-slate-900 break-words " +
+          (long ? "whitespace-pre-line leading-5 min-h-20" : "")
+        }
+      >
+        {value ?? "–"}
+      </div>
     </div>
   );
 }
@@ -166,24 +182,18 @@ function RankingPanel({
 }
 
 function BandList({
-  title,
   items,
   anchor,
   bandLabel,
 }: {
-  title: string;
   items: any[];
   anchor: string;
-  bandLabel?: string;
+  bandLabel: string;
 }) {
-  const label = bandLabel ?? title;
   return (
     <section id={anchor} className="mx-auto max-w-6xl px-4 pt-6 pb-4">
-      <div className="mb-3 flex items-end justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900">{title}</h2>
-          <p className="text-sm text-slate-600">Top 10 in rank order</p>
-        </div>
+      {/* Endast länk till Compare till höger */}
+      <div className="mb-3 flex justify-end">
         <a href="#compare" className="text-sm font-medium text-slate-700 hover:text-slate-900">
           Go to Compare →
         </a>
@@ -192,32 +202,31 @@ function BandList({
       <ol className="space-y-4">
         {items.map((p: any, idx: number) => (
           <li key={p.id ?? idx} className="relative rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
-            {/* Liten band-etikett uppe till vänster: "Premium #1" */}
+            {/* Liten etikett: “Premium #1” etc. */}
             <span className="absolute -top-3 left-4 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
-              {label} <span className="text-slate-500">#{idx + 1}</span>
+              {bandLabel} <span className="text-slate-500">#{idx + 1}</span>
             </span>
 
             <div className="grid gap-4 md:grid-cols-12">
-              {/* Vänster: rank-siffra + bild + namn/pris/cta */}
+              {/* Vänster: rank + bild + namn + info-rad + CTAs */}
               <div className="md:col-span-8 lg:col-span-9">
                 <div className="flex items-start gap-4">
                   <RankBadge n={idx + 1} />
                   <ProductImage src={p.image} alt={p.name ?? "Robot vacuum"} />
-                  <div className="min-w-0">
+
+                  <div className="min-w-0 w-full">
+                    {/* Namn */}
                     <h3 className="truncate text-base font-semibold text-slate-900">
                       {p.name ?? "Model"}
                     </h3>
-                    {p.price && (
-                      <div className="mt-1 text-sm text-slate-600">~{p.price}</div>
-                    )}
 
-                    {/* Feature-raden: Price / Base / Navigation / Suction / Mop type */}
-                    <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+                    {/* INFO-RADEN — flyttad upp, med Price först, sedan Base/Nav/Suction/Mop */}
+                    <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                       <StatCell title="Price" value={p.price ?? p.priceText} />
-                      <StatCell title="Base" value={p.base ?? p.dock} />
-                      <StatCell title="Navigation" value={p.navigation} />
+                      <StatCell title="Base" value={p.base ?? p.dock} long />
+                      <StatCell title="Navigation" value={p.navigation} long />
                       <StatCell title="Suction" value={p.suction} />
-                      <StatCell title="Mop type" value={p.mopType} />
+                      <StatCell title="Mop type" value={p.mopType} long />
                     </div>
 
                     {/* CTAs */}
@@ -243,7 +252,7 @@ function BandList({
                 </div>
               </div>
 
-              {/* Höger: Ranking-panelen */}
+              {/* Höger: Ranking-panel */}
               <div className="md:col-span-4 lg:col-span-3">
                 <RankingPanel
                   spec={p.scores?.spec}
@@ -269,11 +278,11 @@ export default async function Page() {
       {/* Top section */}
       <HeaderFromDesign />
 
-      {/* Banded lists (PDF layout) */}
+      {/* Banded lists */}
       <section className="bg-slate-50/50">
-        <BandList title="Premium" items={premium} anchor="premium" bandLabel="Premium" />
-        <BandList title="Performance" items={performance} anchor="performance" bandLabel="Performance" />
-        <BandList title="Budget" items={budget} anchor="budget" bandLabel="Budget" />
+        <BandList items={premium} anchor="premium" bandLabel="Premium" />
+        <BandList items={performance} anchor="performance" bandLabel="Performance" />
+        <BandList items={budget} anchor="budget" bandLabel="Budget" />
 
         <section id="compare" className="mx-auto max-w-6xl px-4 pt-8 pb-24">
           <div className="mb-3 flex items-center justify-between">
