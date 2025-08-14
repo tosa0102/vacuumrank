@@ -118,6 +118,23 @@ function StatCell({ title, value, long = false }: { title: string; value?: strin
   );
 }
 
+// Formatera sugtal till "<tal> Pa"
+function formatSuction(v?: string | number): string | undefined {
+  if (v === undefined || v === null || v === "") return undefined;
+
+  const s = String(v).trim();
+
+  // Om "Pa" redan finns (oavsett versaler), normalisera bara till stor-Pa
+  if (/\bpa\b/i.test(s)) return s.replace(/\bpa\b/i, "Pa");
+
+  // Om värdet är numeriskt (ex. 8000) eller innehåller siffror, ta ut talet
+  const digits = s.replace(/[^\d]/g, "");
+  if (digits) return `${digits} Pa`;
+
+  // fallback: lägg till " Pa" efter originalsträngen
+  return `${s} Pa`;
+}
+
 function RankingPanel({
   spec,
   review,
@@ -223,7 +240,7 @@ function BandList({
                         <StatCell title="Price" value={p.price ?? p.priceText} />
                         <StatCell title="Base" value={p.base ?? p.dock} long />
                         <StatCell title="Navigation" value={p.navigation} long />
-                        <StatCell title="Suction" value={p.suction} />
+                        <StatCell title="Suction" value={formatSuction(p.suction)} />
                         <StatCell title="Mop type" value={p.mopType} long />
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2">
