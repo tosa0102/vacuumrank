@@ -5,7 +5,7 @@ import Image from "next/image";
 import { getProducts } from "@/app/lib/products";
 import type { ProductLike } from "@/app/lib/serpapi";
 import { fetchShoppingOffersSmart } from "@/app/lib/serpapi";
-import SpecsCells, { StatCell as ClientStatCell } from "./SpecsCells";
+import SpecsCells from "./SpecsCells"; // ✅ endast defaultexporten
 
 export const revalidate = 86_400;
 
