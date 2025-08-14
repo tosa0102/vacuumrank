@@ -1,15 +1,12 @@
 // app/robot-vacuums/page.tsx — TOP SECTION (clean + stable)
-// Scope: only header/hero + breadcrumbs + "Top picks". Rest of page unchanged.
-
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { getProducts } from "@/app/lib/products";
 
-// Håll sidan färsk dagligen så månad/år i rubriken uppdateras automatiskt utan redeploy
-export const revalidate = 86_400; // 24h
+export const revalidate = 86_400; // uppdatera datumet (månad/år) dagligen
 
-// Client-only compare widgets (används längre ner på sidan)
+// Client-only (används längre ned)
 const CompareInline = dynamic(() => import("@/app/components/CompareInline"), { ssr: false });
 const CompareBar = dynamic(() => import("@/app/components/CompareBar"), { ssr: false });
 
@@ -20,22 +17,28 @@ export const metadata: Metadata = {
   alternates: { canonical: "/robot-vacuums" },
 };
 
-// ——— Config för headern ———
+// Header-config
 const CTA_TEXT = "Read: Best Robot Vacuums 2025 (UK)";
 const CTA_HREF = "/best-robot-vacuum-2025";
-const LOGO_SRC = "/rankpilot-logo.jpg"; // lägg filen i /public
+const LOGO_SRC = "/rankpilot-logo.jpg"; // lägg i /public
 const HERO_DATE = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(new Date());
 
-// ——— Top section (enligt din skiss) ———
 function HeaderFromDesign() {
   return (
     <header className="mx-auto w-full max-w-6xl px-4 pt-6">
-      {/* Rad: större ikon till vänster, titelkluster centrerat */}
+      {/* Rad: större logo vänster, titelkluster centrerat */}
       <div className="grid items-center gap-4 md:grid-cols-12">
-        {/* Endast ikon (större), ingen ordmärke-text */}
-        <div className="md:col-span-3 flex items-center">
-          <div className="relative h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-full border border-slate-200 bg-white">
-            <Image src={LOGO_SRC} alt="RankPilot" fill className="object-contain p-1.5" sizes="96px" />
+        {/* Logo only — större, ingen ring */}
+        <div className="md:col-span-3">
+          <div className="relative h-28 w-28 sm:h-32 sm:w-32">
+            <Image
+              src={LOGO_SRC}
+              alt="RankPilot"
+              fill
+              className="object-contain"
+              sizes="128px"
+              priority
+            />
           </div>
         </div>
 
@@ -59,7 +62,7 @@ function HeaderFromDesign() {
         </div>
       </div>
 
-      {/* Breadcrumbs vänsterställda under headern */}
+      {/* Breadcrumbs */}
       <nav aria-label="Breadcrumb" className="mt-4 text-sm text-slate-500">
         <div className="flex items-center gap-1.5">
           <a href="/" className="hover:text-slate-700">Home</a>
