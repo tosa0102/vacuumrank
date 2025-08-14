@@ -91,17 +91,20 @@ function HeaderFromDesign() {
 
 /** Produktbild: alltid <img>, proxar externa URL:er via /api/img för stabil inbäddning */
 function ProductImage({ src, alt }: { src?: string; alt: string }) {
+  const isHttp = (s?: string) => !!s && /^https?:\/\//i.test(s || "");
+  const toProxy = (u?: string) => (u ? (isHttp(u) ? `/api/img?u=${encodeURIComponent(u)}` : u) : undefined);
   const finalSrc = toProxy(src);
+
   if (!finalSrc) {
     return (
       <div className="h-28 w-28 rounded-xl bg-slate-100 flex items-center justify-center text-slate-300">
-        {/* enkel ikon som fallback */}
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <rect x="3" y="3" width="18" height="14" rx="2"/><path d="m3 14 4-4 3 3 5-5 3 3"/>
         </svg>
       </div>
     );
   }
+
   // eslint-disable-next-line @next/next/no-img-element
   return (
     <img
