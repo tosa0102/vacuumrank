@@ -3,17 +3,10 @@
 // Externa fetches körs inne i en unstable_cache så sidan blir snabb efter första körningen.
 
 import { unstable_cache } from "next/cache";
-import { BRAND_SOURCES, SECONDARY_SOURCES, SPEC_FIELD_MAP } from "./spec-sources";
+import { BRAND_SOURCES, SECONDARY_SOURCES } from "./spec-sources";
 import { searchAndExtractSpecs } from "./specs-scraper";
 
 type Input = { brand?: string; model?: string; name?: string };
-
-function keyFrom(p: Input) {
-  const b = (p.brand ?? "").toLowerCase().trim();
-  const m = (p.model ?? "").toLowerCase().trim();
-  const n = (p.name ?? "").toLowerCase().trim();
-  return `specs:${b}|${m}|${n}`;
-}
 
 async function fetchSpecsUncached(p: Input) {
   const qBase =
@@ -36,11 +29,11 @@ async function fetchSpecsUncached(p: Input) {
   return specs;
 }
 
-// 24h cache. Tagga per produkt så vi kan rensa selektivt senare om vi vill.
+// ✅ Rätta sättet: ge en statisk "prefix"-nyckel (array av strängar).
+// Next bygger resten av cache-nyckeln automatiskt från funktionsargumenten.
 const getSpecsCached = unstable_cache(
-  async (p: Input) => fetchSpecsUncached(p),
-  // cache-key builder
-  (p: Input) => [keyFrom(p)],
+  fetchSpecsUncached,
+  ["specs"],                 // <-- statisk prefix
   { revalidate: 86_400, tags: ["specs"] }
 );
 
