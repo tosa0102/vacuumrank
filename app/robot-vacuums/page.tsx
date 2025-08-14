@@ -1,13 +1,15 @@
-// app/robot-vacuums/page.tsx — TOP SECTION REWORK (match provided screenshot)
-// Scope of this change: ONLY the header/hero + breadcrumbs + "Top picks" heading.
-// The rest of the page remains as before.
+// app/robot-vacuums/page.tsx — TOP SECTION (clean + stable)
+// Scope: only header/hero + breadcrumbs + "Top picks". Rest of page unchanged.
 
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { getProducts } from "@/app/lib/products";
 
-// Client-only compare widgets (unchanged for lower sections)
+// Håll sidan färsk dagligen så månad/år i rubriken uppdateras automatiskt utan redeploy
+export const revalidate = 86_400; // 24h
+
+// Client-only compare widgets (används längre ner på sidan)
 const CompareInline = dynamic(() => import("@/app/components/CompareInline"), { ssr: false });
 const CompareBar = dynamic(() => import("@/app/components/CompareBar"), { ssr: false });
 
@@ -18,38 +20,33 @@ export const metadata: Metadata = {
   alternates: { canonical: "/robot-vacuums" },
 };
 
-// ——— CONFIG used in the header (can be moved to a CMS later) ———
-const CTA_TEXT = "Read: Best Robot Vacuums 2025 (UK)"; // pill button text in the screenshot
-const CTA_HREF = "/best-robot-vacuum-2025"; // adjust if you have a different URL
-const LOGO_SRC = "/rankpilot-logo.jpg"; // your provided logo in /public
-const HERO_DATE = new Intl.DateTimeFormat("en-GB", {
-  month: "long",
-  year: "numeric",
-}).format(new Date());
+// ——— Config för headern ———
+const CTA_TEXT = "Read: Best Robot Vacuums 2025 (UK)";
+const CTA_HREF = "/best-robot-vacuum-2025";
+const LOGO_SRC = "/rankpilot-logo.jpg"; // lägg filen i /public
+const HERO_DATE = new Intl.DateTimeFormat("en-GB", { month: "long", year: "numeric" }).format(new Date());
 
-// ——— TOP SECTION (as in your screenshot) ———
+// ——— Top section (enligt din skiss) ———
 function HeaderFromDesign() {
   return (
     <header className="mx-auto w-full max-w-6xl px-4 pt-6">
-      {/* Row: Logo at left, Title cluster centered */}
+      {/* Rad: större ikon till vänster, titelkluster centrerat */}
       <div className="grid items-center gap-4 md:grid-cols-12">
-        {/* Logo + wordmark (left) */}
-        <div className="md:col-span-3 flex items-center gap-3">
-          <div className="relative h-14 w-14 overflow-hidden rounded-full border border-slate-200 bg-white">
-            <Image src={LOGO_SRC} alt="RankPilot" fill className="object-contain p-1" sizes="56px" />
+        {/* Endast ikon (större), ingen ordmärke-text */}
+        <div className="md:col-span-3 flex items-center">
+          <div className="relative h-20 w-20 sm:h-24 sm:w-24 overflow-hidden rounded-full border border-slate-200 bg-white">
+            <Image src={LOGO_SRC} alt="RankPilot" fill className="object-contain p-1.5" sizes="96px" />
           </div>
-          <div className="text-2xl font-semibold tracking-tight text-slate-900">RankPilot</div>
         </div>
 
-        {/* Centered title/subtitle/CTA (right) */}
+        {/* Centrerad H1 + underrad + pill-knapp */}
         <div className="md:col-span-9 text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
             Best Robot Vacuums in the UK <span className="font-medium">({HERO_DATE})</span>
           </h1>
-          <p className="mt-1 text-sm text-slate-600 md:text-base">
+          <p className="mt-1 text-sm md:text-base text-slate-600">
             <span className="font-medium">Premium</span> • <span className="font-medium">Performance</span> • <span className="font-medium">Budget</span>
-            <span className="mx-2">—</span>
-            desk-tested and ranked
+            <span className="mx-2">—</span> desk-tested and ranked
           </p>
           <div className="mt-3 flex justify-center">
             <a
@@ -62,7 +59,7 @@ function HeaderFromDesign() {
         </div>
       </div>
 
-      {/* Breadcrumbs under the header, aligned left */}
+      {/* Breadcrumbs vänsterställda under headern */}
       <nav aria-label="Breadcrumb" className="mt-4 text-sm text-slate-500">
         <div className="flex items-center gap-1.5">
           <a href="/" className="hover:text-slate-700">Home</a>
@@ -71,13 +68,14 @@ function HeaderFromDesign() {
         </div>
       </nav>
 
-      {/* Section title: Top picks */}
+      {/* Sektionstitel */}
       <div className="mt-4">
         <h2 className="text-2xl font-semibold text-slate-900">Top picks</h2>
       </div>
     </header>
   );
 }
+
 
 // ——— REST OF PAGE (unchanged layout; we will refine in later steps) ———
 function ScorePill({ label, value }: { label: string; value?: number | string }) {
