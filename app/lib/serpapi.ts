@@ -1,10 +1,10 @@
 // app/lib/serpapi.ts
-// Smart SerpAPI-adapter för Shopping-bilder + priser.
+// SerpAPI-adapter för Shopping-bilder + priser.
 // Env: SERPAPI_KEY (Vercel → Project → Settings → Environment Variables)
 
 export type VendorOffer = { url?: string; price?: number };
 export type Offers = {
-  image?: string;
+  image?: string; // OBS: aldrig Amazon-bild
   vendors: {
     amazon?: VendorOffer;
     currys?: VendorOffer;
@@ -32,7 +32,7 @@ function normalizeVendorName(name?: string): keyof Offers["vendors"] | undefined
   return undefined;
 }
 
-// Gör thumbnails säkra att bädda in (https + absolut url)
+// https + absolut url
 function normalizeThumb(u?: string): string | undefined {
   if (!u) return undefined;
   let s = u.trim();
@@ -45,8 +45,13 @@ function normalizeThumb(u?: string): string | undefined {
 function isAmazonHost(u?: string): boolean {
   if (!u) return false;
   try {
-    const h = new URL(u).hostname.toLowerCase();
-    return h.includes("media-amazon.com") || h.includes("images-amazon.com") || h.endsWith("amazon.com");
+    const host = new URL(u).hostname.toLowerCase();
+    return (
+      host.includes("media-amazon.") ||
+      host.includes("images-amazon.") ||
+      host.endsWith("amazon.com") ||
+      host.endsWith("amazon.co.uk")
+    );
   } catch {
     return false;
   }
@@ -58,7 +63,7 @@ function looksLikeAccessory(title?: string) {
   return STOPWORDS.some((w) => t.includes(w));
 }
 function tokenise(s: string) {
-  return s.toLowerCase().split(/[\s\\-_/]+/).filter(Boolean);
+  return s.toLowerCase().split(/[\s\-_/]+/).filter(Boolean);
 }
 
 // ---------------- query builder ----------------
@@ -101,7 +106,7 @@ export async function fetchShoppingOffers(query: string, p?: ProductLike): Promi
     const qTokens = tokenise(query);
     const vendorWeight: Record<string, number> = { amazon: 3, currys: 2, argos: 2, ao: 2 };
 
-    let firstThumb: string | undefined;
+    // Vi väljer bild separat nedan, och tillåter INTE Amazon-bilder
     let firstNonAmazonThumb: string | undefined;
 
     const scored = results
@@ -118,26 +123,25 @@ export async function fetchShoppingOffers(query: string, p?: ProductLike): Promi
 
         const rawThumb = (r?.thumbnail as string | undefined) ?? (r?.image as string | undefined);
         const thumb = normalizeThumb(rawThumb);
-        if (thumb && !firstThumb) firstThumb = thumb;
         if (thumb && !firstNonAmazonThumb && !isAmazonHost(thumb)) firstNonAmazonThumb = thumb;
 
-        return { r, vendorKey, thumb, score };
+        return { r, vendorKey, score };
       })
       .sort((a, b) => b.score - a.score);
 
     const offers: Offers = { vendors: {} };
 
+    // Fyll vendor-länkar/priser (oberoende av bild)
     for (const { r, vendorKey } of scored) {
-      if (vendorKey === "other") continue; // vi väljer bild separat nedan
-
+      if (vendorKey === "other") continue;
       const vendor: keyof Offers["vendors"] = vendorKey;
       const price = r?.extracted_price ?? parsePrice(r?.price);
       const link = (r?.link as string | undefined) ?? (r?.product_link as string | undefined);
       if (!offers.vendors[vendor]) offers.vendors[vendor] = { url: link, price };
     }
 
-    // Bildval: föredra icke‑Amazon; annars första tillgängliga
-    offers.image = firstNonAmazonThumb || firstThumb;
+    // Bildval: ALDRIG Amazon-host. Om vi inte hittar någon annan: lämna tomt.
+    offers.image = firstNonAmazonThumb; // kan vara undefined → UI visar placeholder
 
     return offers;
   } catch (err) {
