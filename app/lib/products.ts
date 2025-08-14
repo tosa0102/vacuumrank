@@ -1,69 +1,92 @@
-type Raw = any;
+// app/lib/products.ts
+// Normaliserar inkommande data till ett enhetligt schema.
+// Stöd för { premium, performance, budget } eller flat array med "band"/"tier".
 
-export type Prod = {
-  id?: string;
-  name: string;
-  image?: string;
-  price?: string;        // "~£999" (visning)
-  priceValue?: number;   // 999 (för jämförelse)
-  base?: string;         // PDF: "Base"
-  navigation?: string;
-  suction?: number;      // i Pa
-  mopType?: string;
-  scores?: { overall?: number; spec?: number; review?: number; value?: number };
-  prevRank?: string | number;
-  buyUrl?: string;
-};
+import raw from "./data.json";
 
-// Hjälpare: plocka ut tal (eller undefined) ur diverse indata
-function numFrom(val: unknown): number | undefined {
-  if (typeof val === "number" && Number.isFinite(val)) return val;
-  if (typeof val === "string") {
-    const n = Number(val.replace(/[^0-9.]/g, ""));
+type Bands = { premium: any[]; performance: any[]; budget: any[] };
+
+function toPoundsString(n?: number, fallback?: string) {
+  if (typeof n === "number" && Number.isFinite(n)) return `£${n}`;
+  return fallback;
+}
+
+function numberFromMixed(x: unknown): number | undefined {
+  if (typeof x === "number" && Number.isFinite(x)) return x;
+  if (typeof x === "string") {
+    const n = Number(x.replace(/[^\d.]/g, ""));
     return Number.isFinite(n) ? n : undefined;
   }
   return undefined;
 }
 
-function mapOne(x: Raw): Prod {
-  const priceText =
-    x.priceText ?? x.price_range ?? x.priceDisplay ?? (typeof x.price === "string" ? x.price : undefined);
-
+function normalizeProduct(x: any) {
+  const priceTextCandidates =
+    x.priceText ?? x.price_display ?? x.priceDisplay ?? x.price_range ?? (typeof x.price === "string" ? x.price : undefined);
   const priceValue =
     x.priceValue ??
-    (typeof x.price === "number" ? x.price : numFrom(priceText));
+    (typeof x.price === "number"
+      ? x.price
+      : numberFromMixed(priceTextCandidates));
 
   return {
-    id: x.id ?? x.slug,
-    name: x.model ?? x.name,
-    image: x.imageUrl ?? x.img,
-    price: priceText ?? x.price?.toString(),
+    id: x.id ?? x.sku ?? x.asin ?? x.ean ?? x.model ?? x.name,
+    name: x.name ?? x.title ?? x.modelName,
+    brand: x.brand ?? x.maker ?? x.manufacturer,
+    model: x.model ?? x.modelNumber ?? x.skuModel ?? x.code,
+    asin: x.asin ?? x.ASIN,
+    ean: x.ean ?? x.EAN ?? x.barcode,
+    image: x.image ?? x.imageUrl ?? x.img ?? x.thumbnail,
+
+    // Pris i två format: text + numeriskt värde (om möjligt)
+    price: priceTextCandidates ?? toPoundsString(priceValue),
     priceValue,
+
+    // Specs vi visar i list-raden
     base: x.base ?? x.dock,
     navigation: x.navigation ?? x.nav,
-    suction: x.suctionPa ?? x.suction,
-    mopType: x.mopType ?? x.mop,
+    suction: x.suction ?? x.suctionPa ?? x.pa ?? x.suction_power,
+    mopType: x.mopType ?? x.mop ?? x.mop_type,
+
+    // Betyg
     scores: {
-      overall: x.scores?.overall ?? x.score_overall,
-      spec:    x.scores?.spec    ?? x.score_spec,
-      review:  x.scores?.review  ?? x.score_review,
-      value:   x.scores?.value   ?? x.score_value,
+      spec: x.scores?.spec ?? x.specScore ?? x.spec,
+      review: x.scores?.review ?? x.reviewScore ?? x.review,
+      value: x.scores?.value ?? x.valueScore ?? x.value,
+      overall: x.scores?.overall ?? x.overallScore ?? x.overall,
     },
-    prevRank: x.prevRank ?? x.rank_prev,
-    buyUrl: x.buy?.amazon ?? x.buyUrl,
+
+    prevRank: x.prevRank ?? x.previousRank ?? x.prev,
+
+    // Retailer-länkar (används av CTA-knapparna)
+    links: {
+      amazon: x.links?.amazon ?? x.amazonUrl ?? x.amazon,
+      currys: x.links?.currys ?? x.currysUrl ?? x.currys,
+      argos: x.links?.argos ?? x.argosUrl ?? x.argos,
+      ao: x.links?.ao ?? x.aoUrl ?? x.ao,
+    },
   };
 }
 
-// Parametern är valfri → du kan kalla getProducts() utan argument
-export async function getProducts(market: string | { market: string } = "uk") {
-  const _m = typeof market === "string" ? market : market?.market ?? "uk";
-  // Byt till var din data faktiskt ligger
-  const raw = await import("@/app/lib/data.json");
-  const pick = (arr: any[]) => (arr ?? []).map(mapOne);
+export async function getProducts(): Promise<Bands> {
+  const src: any = raw ?? {};
 
-  return {
-    premium: pick(raw.premium),
-    performance: pick(raw.performance),
-    budget: pick(raw.budget),
-  };
+  // Fall 1: bandad struktur
+  if (!Array.isArray(src)) {
+    return {
+      premium: (src.premium ?? []).map(normalizeProduct),
+      performance: (src.performance ?? []).map(normalizeProduct),
+      budget: (src.budget ?? []).map(normalizeProduct),
+    };
+  }
+
+  // Fall 2: flat array + band/tier-fält
+  const byBand: Bands = { premium: [], performance: [], budget: [] };
+  for (const item of src) {
+    const band = String(item?.band ?? item?.tier ?? "").toLowerCase();
+    if (band === "premium") byBand.premium.push(normalizeProduct(item));
+    else if (band === "performance") byBand.performance.push(normalizeProduct(item));
+    else if (band === "budget") byBand.budget.push(normalizeProduct(item));
+  }
+  return byBand;
 }
