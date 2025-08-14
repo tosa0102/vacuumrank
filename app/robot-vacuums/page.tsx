@@ -79,7 +79,7 @@ function HeaderFromDesign() {
   );
 }
 
-// ——— REST OF PAGE (PDF-aligned Top picks; no #1 circle) ———
+// ——— REST OF PAGE (PDF-aligned Top picks; tighter spacing; multi-retail CTAs) ———
 function ScorePill({ label, value }: { label: string; value?: number | string }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/70 px-2 py-0.5 text-[12px] font-medium text-slate-700">
@@ -169,6 +169,27 @@ function RankingPanel({
   );
 }
 
+/** Hjälpare: generera smarta retail-länkar (med fallback till sök-URL) */
+function retailLinks(p: any): { label: string; href: string }[] {
+  const q = encodeURIComponent(p?.name ?? "");
+  const links: { label: string; href: string }[] = [];
+
+  const push = (href: string | undefined, label: string, fallback: string) => {
+    const url = typeof href === "string" && href.length > 0 ? href : fallback;
+    if (url) links.push({ label, href: url });
+  };
+
+  // Amazon först (använder befintlig buyUrl om du har den; annars sök-URL)
+  push(p?.buyUrl, "Buy at Amazon", `https://www.amazon.co.uk/s?k=${q}`);
+
+  // Framtida affiliate-partners (Currys, Argos, AO) — använder p.links.* om de finns, annars sök-URL
+  push(p?.links?.currys ?? p?.currysUrl, "Buy at Currys", `https://www.currys.co.uk/search?q=${q}`);
+  push(p?.links?.argos ?? p?.argosUrl, "Buy at Argos", `https://www.argos.co.uk/search/${q}/`);
+  push(p?.links?.ao ?? p?.aoUrl, "Buy at AO", `https://ao.com/l/search?search=${q}`);
+
+  return links;
+}
+
 function BandList({
   items,
   anchor,
@@ -177,115 +198,4 @@ function BandList({
   items: any[];
   anchor: string;
   bandLabel: string;
-}) {
-  return (
-    <section id={anchor} className="mx-auto max-w-6xl px-4 pt-6 pb-4">
-      {/* Endast länk till Compare till höger */}
-      <div className="mb-3 flex justify-end">
-        <a href="#compare" className="text-sm font-medium text-slate-700 hover:text-slate-900">
-          Go to Compare →
-        </a>
-      </div>
-
-      <ol className="space-y-4">
-        {items.map((p: any, idx: number) => (
-          <li
-            key={p.id ?? idx}
-            className="relative rounded-3xl border border-slate-200 bg-white p-4 shadow-sm md:p-5"
-          >
-            {/* Liten etikett: “Premium #1” etc. */}
-            <span className="absolute -top-3 left-4 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
-              {bandLabel} <span className="text-slate-500">#{idx + 1}</span>
-            </span>
-
-            <div className="grid gap-4 md:grid-cols-12">
-              {/* Vänster: bild + namn + info-rad + CTAs */}
-              <div className="md:col-span-8 lg:col-span-9">
-                <div className="flex items-start gap-5">
-                  <ProductImage src={p.image} alt={p.name ?? "Robot vacuum"} />
-
-                  <div className="min-w-0 w-full">
-                    {/* Namn */}
-                    <h3 className="truncate text-[17px] font-semibold text-slate-900 md:text-lg">
-                      {p.name ?? "Model"}
-                    </h3>
-
-                    {/* INFO-RADEN — direkt under namn */}
-                    <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-                      <StatCell title="Price" value={p.price ?? p.priceText} />
-                      <StatCell title="Base" value={p.base ?? p.dock} long />
-                      <StatCell title="Navigation" value={p.navigation} long />
-                      <StatCell title="Suction" value={p.suction} />
-                      <StatCell title="Mop type" value={p.mopType} long />
-                    </div>
-
-                    {/* CTAs */}
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {p.buyUrl && (
-                        <a
-                          href={p.buyUrl}
-                          className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                        >
-                          Buy at Amazon
-                        </a>
-                      )}
-                      {p.brandUrl && (
-                        <a
-                          href={p.brandUrl}
-                          className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-                        >
-                          Buy at Brand store
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Höger: Ranking-panel */}
-              <div className="md:col-span-4 lg:col-span-3">
-                <RankingPanel
-                  spec={p.scores?.spec}
-                  review={p.scores?.review}
-                  value={p.scores?.value}
-                  overall={p.scores?.overall}
-                  prevRank={p.prevRank}
-                />
-              </div>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-export default async function Page() {
-  const { premium = [], performance = [], budget = [] } = (await getProducts()) as any;
-
-  return (
-    <main className="min-h-screen bg-white">
-      {/* Top section */}
-      <HeaderFromDesign />
-
-      {/* Banded lists */}
-      <section className="bg-slate-50/50">
-        <BandList items={premium} anchor="premium" bandLabel="Premium" />
-        <BandList items={performance} anchor="performance" bandLabel="Performance" />
-        <BandList items={budget} anchor="budget" bandLabel="Budget" />
-
-        <section id="compare" className="mx-auto max-w-6xl px-4 pt-8 pb-24">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-slate-900">Compare</h2>
-            <a href="#top" className="text-sm font-medium text-slate-700 hover:text-slate-900">Back to top ↑</a>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-            <CompareInline />
-          </div>
-        </section>
-      </section>
-
-      <CompareBar />
-    </main>
-  );
 }
