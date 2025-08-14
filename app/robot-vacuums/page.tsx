@@ -89,15 +89,9 @@ function HeaderFromDesign() {
   );
 }
 
-/** Produktbild: <img> med proxy + fallback till original-URL om proxyn felar */
+/** Produktbild: <img> via proxy (utan event-handlers, kompatibel med Server Components) */
 function ProductImage({ src, alt }: { src?: string; alt: string }) {
-  const isHttp = (s?: string) => !!s && /^https?:\/\//i.test(s || "");
-  const proxied = (u?: string) => (u ? (isHttp(u) ? `/api/img?u=${encodeURIComponent(u)}` : u) : undefined);
-
-  const original = src;
-  const viaProxy = proxied(src);
-  const finalSrc = viaProxy || original;
-
+  const finalSrc = toProxy(src);
   if (!finalSrc) {
     return (
       <div className="h-28 w-28 rounded-xl bg-slate-100 flex items-center justify-center text-slate-300">
@@ -107,7 +101,6 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
       </div>
     );
   }
-
   // eslint-disable-next-line @next/next/no-img-element
   return (
     <img
@@ -116,13 +109,6 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
       referrerPolicy="no-referrer"
       className="h-28 w-28 rounded-xl bg-white object-contain p-2"
       loading="lazy"
-      onError={(e) => {
-        // Om proxyn skulle 502:a: testa original-URL direkt
-        const img = e.currentTarget as HTMLImageElement;
-        if (viaProxy && original && img.src !== original) {
-          img.src = original;
-        }
-      }}
     />
   );
 }
@@ -238,7 +224,7 @@ function BandList({
           const key = keyFor(p);
           const offers = offersByKey.get(key);
           const dynImage = imagesByKey.get(key);
-          // Bildval: manuell bild om du redan har en; annars SerpAPI-bild (rå URL här)
+          // Bildval: manuell bild om du redan har en; annars SerpAPI-bild
           const displayImage = (p?.image && typeof p.image === "string" ? p.image : dynImage) as string | undefined;
 
           return (
