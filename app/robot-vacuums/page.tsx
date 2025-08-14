@@ -81,9 +81,13 @@ function HeaderFromDesign() {
   );
 }
 
-// ——— REST OF PAGE (SerpAPI images + price-on-buttons; tighter spacing) ———
+// ——— REST OF PAGE (smart SerpAPI; hooks för brand/model/ean/asin) ———
+import type { ProductLike } from "@/app/lib/serpapi";
+import { fetchShoppingOffersSmart } from "@/app/lib/serpapi";
+
+const GBP = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+
 function ProductImage({ src, alt }: { src?: string; alt: string }) {
-  // Om vi har en lokal/whitelistad bild → använd Next/Image
   if (src && (src.startsWith("/") || src.includes("m.media-amazon.com"))) {
     return (
       <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-white">
@@ -91,17 +95,11 @@ function ProductImage({ src, alt }: { src?: string; alt: string }) {
       </div>
     );
   }
-  // Annars fallback till vanlig <img> (ingen domain-whitelist krävs)
   if (src) {
-    return (
-      <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-white">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={alt} className="h-full w-full object-contain p-2" />
-      </div>
-    );
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={src} alt={alt} className="h-28 w-28 rounded-xl bg-white object-contain p-2" />;
   }
-  // Placeholder
-  return <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-slate-100" />;
+  return <div className="h-28 w-28 rounded-xl bg-slate-100" />;
 }
 
 function StatCell({
@@ -111,7 +109,7 @@ function StatCell({
 }: {
   title: string;
   value?: string | number;
-  long?: boolean; // ger plats för 3–4 rader
+  long?: boolean;
 }) {
   return (
     <div className="min-w-0">
@@ -172,73 +170,66 @@ function RankingPanel({
   );
 }
 
-// Hjälpare: bygg CTA-knappar med pris
+// CTA-knappar + pris (SerpAPI offers)
 function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
   const q = encodeURIComponent(p?.name ?? "");
   const v = offers?.vendors ?? {};
   const buttons: { label: string; href: string }[] = [];
 
   const add = (vendor: "amazon" | "currys" | "argos" | "ao", label: string, fallback: string) => {
-    const url = v[vendor]?.url ?? fallback;
+    const url = v[vendor]?.url ?? p?.links?.[vendor] ?? p?.[`${vendor}Url`] ?? fallback;
     const price = v[vendor]?.price;
     const priceTxt = typeof price === "number" ? ` ${GBP.format(price)}` : "";
     buttons.push({ label: `${label}${priceTxt}`, href: url });
   };
 
-  add("amazon", "Amazon", `https://www.amazon.co.uk/s?k=${q}`);
-  add("currys", "Currys", `https://www.currys.co.uk/search?q=${q}`);
-  add("argos", "Argos", `https://www.argos.co.uk/search/${q}/`);
-  add("ao", "AO", `https://ao.com/l/search?search=${q}`);
+  add("amazon", "Buy at Amazon", `https://www.amazon.co.uk/s?k=${q}`);
+  add("currys", "Buy at Currys", `https://www.currys.co.uk/search?q=${q}`);
+  add("argos", "Buy at Argos", `https://www.argos.co.uk/search/${q}/`);
+  add("ao", "Buy at AO", `https://ao.com/l/search?search=${q}`);
 
   return buttons;
 }
 
-type Enriched = { id?: string; name?: string; image?: string; [k: string]: any };
+function keyFor(p: any) {
+  return [p.brand, p.model, p.name, p.ean, p.asin].filter(Boolean).join("|").toLowerCase();
+}
 
 function BandList({
   items,
   anchor,
   bandLabel,
-  offersByName,
-  imagesByName,
+  offersByKey,
+  imagesByKey,
 }: {
-  items: Enriched[];
+  items: any[];
   anchor: string;
   bandLabel: string;
-  offersByName: Map<string, import("@/app/lib/serpapi").Offers>;
-  imagesByName: Map<string, string | undefined>;
+  offersByKey: Map<string, import("@/app/lib/serpapi").Offers>;
+  imagesByKey: Map<string, string | undefined>;
 }) {
   return (
     <section id={anchor} className="mx-auto max-w-6xl px-4 pt-3 pb-1">
-      {/* "Go to Compare" borttagen */}
       <ol className="space-y-3 md:space-y-3.5">
-        {items.map((p, idx) => {
-          const nameKey = p.name ?? "";
-          const offers = offersByName.get(nameKey);
-          const dynImage = imagesByName.get(nameKey);
+        {items.map((p: any, idx: number) => {
+          const key = keyFor(p);
+          const offers = offersByKey.get(key);
+          const dynImage = imagesByKey.get(key);
           const displayImage = p.image || dynImage;
 
           return (
-            <li
-              key={p.id ?? idx}
-              className="relative rounded-3xl border border-slate-200 bg-white p-3 shadow-sm md:p-4"
-            >
+            <li key={p.id ?? idx} className="relative rounded-3xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
               <span className="absolute -top-2 left-4 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-700">
                 {bandLabel} <span className="text-slate-500">#{idx + 1}</span>
               </span>
 
               <div className="grid gap-4 md:grid-cols-12">
-                {/* Vänster: bild + namn + info + CTAs */}
+                {/* Vänster: bild + info */}
                 <div className="md:col-span-8 lg:col-span-9">
                   <div className="flex items-start gap-5">
                     <ProductImage src={displayImage} alt={p.name ?? "Robot vacuum"} />
-
                     <div className="min-w-0 w-full">
-                      <h3 className="truncate text-[17px] font-semibold text-slate-900 md:text-lg">
-                        {p.name ?? "Model"}
-                      </h3>
-
-                      {/* Info-rad under namn */}
+                      <h3 className="truncate text-[17px] font-semibold text-slate-900 md:text-lg">{p.name ?? "Model"}</h3>
                       <div className="mt-1 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
                         <StatCell title="Price" value={p.price ?? p.priceText} />
                         <StatCell title="Base" value={p.base ?? p.dock} long />
@@ -246,8 +237,6 @@ function BandList({
                         <StatCell title="Suction" value={p.suction} />
                         <StatCell title="Mop type" value={p.mopType} long />
                       </div>
-
-                      {/* CTA-knappar m/priser */}
                       <div className="mt-2 flex flex-wrap gap-2">
                         {retailButtons(p, offers).map((link) => (
                           <a
@@ -257,15 +246,14 @@ function BandList({
                             target="_blank"
                             className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
                           >
-                            Buy at {link.label}
+                            {link.label}
                           </a>
                         ))}
                       </div>
                     </div>
                   </div>
                 </div>
-
-                {/* Höger: Ranking-panel */}
+                {/* Höger: ranking */}
                 <div className="md:col-span-4 lg:col-span-3">
                   <RankingPanel
                     spec={p.scores?.spec}
@@ -287,54 +275,36 @@ function BandList({
 export default async function Page() {
   const { premium = [], performance = [], budget = [] } = (await getProducts()) as any;
 
-  // 1) Bygg upp unik lista med namn att slå upp
-  const uniqueNames = Array.from(
-    new Set([...premium, ...performance, ...budget].map((p: any) => p?.name).filter(Boolean))
-  ) as string[];
+  const all: any[] = [...premium, ...performance, ...budget];
+  const byKey = new Map<string, any>();
+  for (const p of all) byKey.set(keyFor(p), p);
+  const keys = Array.from(byKey.keys());
 
-  // 2) Hämta offers (priser + thumbnail) via SerpAPI parallellt (cache 6 h)
-  const results = await Promise.allSettled(uniqueNames.map((n) => fetchShoppingOffers(n)));
+  // Hämta offers (bilder + priser) smart per unik nyckel
+  const results = await Promise.allSettled(
+    keys.map((k) => {
+      const p = byKey.get(k) as ProductLike;
+      return fetchShoppingOffersSmart(p);
+    })
+  );
 
-  // 3) Mappa tillbaka till name → offers / image
-  const offersByName = new Map<string, import("@/app/lib/serpapi").Offers>();
-  const imagesByName = new Map<string, string | undefined>();
-  uniqueNames.forEach((name, i) => {
+  const offersByKey = new Map<string, import("@/app/lib/serpapi").Offers>();
+  const imagesByKey = new Map<string, string | undefined>();
+  keys.forEach((k, i) => {
     const r = results[i];
     if (r.status === "fulfilled" && r.value) {
-      offersByName.set(name, r.value);
-      if (r.value.image) imagesByName.set(name, r.value.image);
+      offersByKey.set(k, r.value);
+      if (r.value.image) imagesByKey.set(k, r.value.image);
     }
   });
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Top section */}
       <HeaderFromDesign />
-
-      {/* Lists — tighter spacing, bilder via SerpAPI, knappar med priser */}
       <section className="bg-slate-50/50">
-        <BandList
-          items={premium}
-          anchor="premium"
-          bandLabel="Premium"
-          offersByName={offersByName}
-          imagesByName={imagesByName}
-        />
-        <BandList
-          items={performance}
-          anchor="performance"
-          bandLabel="Performance"
-          offersByName={offersByName}
-          imagesByName={imagesByName}
-        />
-        <BandList
-          items={budget}
-          anchor="budget"
-          bandLabel="Budget"
-          offersByName={offersByName}
-          imagesByName={imagesByName}
-        />
-
+        <BandList items={premium} anchor="premium" bandLabel="Premium" offersByKey={offersByKey} imagesByKey={imagesByKey} />
+        <BandList items={performance} anchor="performance" bandLabel="Performance" offersByKey={offersByKey} imagesByKey={imagesByKey} />
+        <BandList items={budget} anchor="budget" bandLabel="Budget" offersByKey={offersByKey} imagesByKey={imagesByKey} />
         <section id="compare" className="mx-auto max-w-6xl px-4 pt-8 pb-24">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-900">Compare</h2>
@@ -345,7 +315,6 @@ export default async function Page() {
           </div>
         </section>
       </section>
-
       <CompareBar />
     </main>
   );
