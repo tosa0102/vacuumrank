@@ -85,7 +85,7 @@ export async function fetchShoppingOffers(query: string, p?: ProductLike): Promi
 
   try {
     // För test: revalidate 60s. Höj gärna till 21600 (6h) när allt sitter.
-    const res = await fetch(url, { next: { revalidate: 60 } });
+    const res = await fetch(url, { next: { revalidate: 21600 } });
     if (!res.ok) return { vendors: {} } as Offers;
 
     const data = await res.json();
