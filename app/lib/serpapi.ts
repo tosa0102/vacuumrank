@@ -1,12 +1,11 @@
 // app/lib/serpapi.ts
 // Lightweight SerpAPI adapter för bilder + priser (Google Shopping).
-// Kräver env: SERPAPI_KEY (lägg in i Vercel → Settings → Environment Variables).
-//
-// OBS: Vi cache:ar svar i 6 timmar (revalidate: 21600) för att spara API-budget.
+// Env: SERPAPI_KEY (Vercel → Project → Settings → Environment Variables)
+// NOTE: Just nu revalidate=60 för test. Höj till 21_600 (6h) när allt funkar.
 
 export type VendorOffer = { url?: string; price?: number };
 export type Offers = {
-  image?: string; // thumbnail från Google Shopping (ofta gstatic) eller Amazon-resultat
+  image?: string; // thumbnail från Google Shopping (gstatic/merchant) eller Amazon-resultat
   vendors: {
     amazon?: VendorOffer;
     currys?: VendorOffer;
@@ -34,14 +33,18 @@ function normalizeVendorName(name?: string): keyof Offers["vendors"] | undefined
 }
 
 export async function fetchShoppingOffers(query: string): Promise<Offers> {
+  if (!query) return { vendors: {} } as Offers;
+
   if (!process.env.SERPAPI_KEY) {
     console.warn("SERPAPI_KEY missing; skipping SerpAPI for:", query);
     return { vendors: {} } as Offers;
+  }
 
   const url =
-    `https://serpapi.com/search.json?engine=google_shopping&hl=en&gl=uk&q=${encodeURIComponent(
-      query
-    )}&api_key=${process.env.SERPAPI_KEY}`;
+    `https://serpapi.com/search.json` +
+    `?engine=google_shopping&hl=en&gl=uk&num=20` + // num=20 för bättre täckning
+    `&q=${encodeURIComponent(query)}` +
+    `&api_key=${process.env.SERPAPI_KEY}`;
 
   try {
     const res = await fetch(url, { next: { revalidate: 60 } });
@@ -53,25 +56,30 @@ export async function fetchShoppingOffers(query: string): Promise<Offers> {
     const offers: Offers = { vendors: {} };
 
     for (const r of results) {
-      const vendor = normalizeVendorName(r?.source);
+      // SerpAPI varierar fältnamn lite; täck flera
+      const vendor = normalizeVendorName(r?.source ?? r?.merchant);
       if (!vendor) continue;
 
       const price = r?.extracted_price ?? parsePrice(r?.price);
-      const link = r?.link as string | undefined;
+      const link = (r?.link as string | undefined) ?? (r?.product_link as string | undefined);
 
       // Behåll första träffen per vendor
       if (!offers.vendors[vendor]) offers.vendors[vendor] = { url: link, price };
 
-      // Bild: föredra Amazon, annars första bästa thumbnail
-      const thumb = (r?.thumbnail as string | undefined) ?? undefined;
-      if (!offers.image || vendor === "amazon") {
-        if (thumb) offers.image = thumb;
+      // Bild: föredra Amazon, annars första bästa thumbnail/image
+      const thumb =
+        (r?.thumbnail as string | undefined) ??
+        (r?.image as string | undefined) ??
+        undefined;
+
+      if ((vendor === "amazon" && thumb) || (!offers.image && thumb)) {
+        offers.image = thumb;
       }
     }
 
     return offers;
-  } catch {
-    // Tyst fallback
+  } catch (err) {
+    console.warn("SerpAPI error for:", query, err);
     return { vendors: {} } as Offers;
   }
 }
