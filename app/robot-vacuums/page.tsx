@@ -28,9 +28,8 @@ const GBP = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" 
 
 // Hjälpare
 const isHttp = (s?: string) => !!s && /^https?:\/\//i.test(s || "");
-function proxied(src?: string) {
+function toProxy(src?: string) {
   if (!src) return undefined;
-  // Endast externa URL:er proxas – lokala /… laddas direkt
   return isHttp(src) ? `/api/img?u=${encodeURIComponent(src)}` : src;
 }
 
@@ -90,24 +89,23 @@ function HeaderFromDesign() {
   );
 }
 
+/** Produktbild: alltid <img>, proxar externa URL:er via /api/img för stabil inbäddning */
 function ProductImage({ src, alt }: { src?: string; alt: string }) {
-  if (!src) return <div className="h-28 w-28 rounded-xl bg-slate-100" />;
-
-  // Lokala vägar (börjar med "/") renderas via next/image
-  if (src.startsWith("/")) {
+  const finalSrc = toProxy(src);
+  if (!finalSrc) {
     return (
-      <div className="relative h-28 w-28 overflow-hidden rounded-xl bg-white">
-        <Image src={src} alt={alt} fill className="object-contain p-2" sizes="112px" />
+      <div className="h-28 w-28 rounded-xl bg-slate-100 flex items-center justify-center text-slate-300">
+        {/* enkel ikon som fallback */}
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <rect x="3" y="3" width="18" height="14" rx="2"/><path d="m3 14 4-4 3 3 5-5 3 3"/>
+        </svg>
       </div>
     );
   }
-
-  // Allt externt går via proxy för stabil inbäddning + caching
-  const p = proxied(src);
   // eslint-disable-next-line @next/next/no-img-element
   return (
     <img
-      src={p}
+      src={finalSrc}
       alt={alt}
       referrerPolicy="no-referrer"
       className="h-28 w-28 rounded-xl bg-white object-contain p-2"
@@ -227,9 +225,8 @@ function BandList({
           const key = keyFor(p);
           const offers = offersByKey.get(key);
           const dynImage = imagesByKey.get(key);
-          // Bildval: manuell bild om du redan har en; annars SerpAPI-bild
-          const chosen = p?.image && typeof p.image === "string" ? p.image : dynImage;
-          const displayImage = proxied(chosen);
+          // Bildval: manuell bild om du redan har en; annars SerpAPI-bild (rå URL här)
+          const displayImage = (p?.image && typeof p.image === "string" ? p.image : dynImage) as string | undefined;
 
           return (
             <li key={p.id ?? idx} className="relative rounded-3xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
