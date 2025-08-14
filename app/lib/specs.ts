@@ -1,6 +1,6 @@
 // app/lib/specs.ts
-// Prioritet: Tillverkare (whitelist) → Sekundära källor.
-// Ingen fallback till data.json i UI; om inget hittas visas "–".
+// Prioritet: Tillverkare (whitelist) → Sekundära källor (UK).
+// Ingen fallback till data.json. Suction normaliseras till "<tal> Pa".
 
 import { BRAND_SOURCES, SECONDARY_SOURCES, SPEC_FIELD_MAP } from "./spec-sources";
 import { searchAndExtractSpecs } from "./specs-scraper";
@@ -22,13 +22,11 @@ export async function fetchProductSpecs({
 
   // 1) Tillverkare — whitelistas
   const bKey = (brand ?? "").toLowerCase();
-  const domains = BRAND_SOURCES[bKey] ?? [];
-  const manuQueries = domains.length
-    ? [`${qBase} site:${domains.join(" OR site:")}`]
-    : [`${qBase}`]; // om vi inte har en känd domän, sök brett
+  const manu = BRAND_SOURCES[bKey] ?? [];
+  const manuQueries = manu.length ? [`${qBase} site:${manu.join(" OR site:")}`] : [`${qBase}`];
 
   let specs = await searchAndExtractSpecs({ queries: manuQueries });
-  if (hasAllSpecs(specs)) return specs;
+  if (hasAny(specs)) return specs;
 
   // 2) Sekundära källor (UK retailers / datablad)
   const secQueries = [`${qBase} site:${SECONDARY_SOURCES.join(" OR site:")}`];
@@ -39,6 +37,9 @@ export async function fetchProductSpecs({
   return specs;
 }
 
-function hasAllSpecs(specs: Record<string, any>) {
+function hasAny(specs: Record<string, any>) {
+  return Boolean(specs.base || specs.navigation || specs.suction || specs.mopType);
+}
+function hasAll(specs: Record<string, any>) {
   return Object.keys(SPEC_FIELD_MAP).every((k) => Boolean(specs[k]));
 }
