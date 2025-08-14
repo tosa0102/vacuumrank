@@ -175,7 +175,7 @@ function RankingPanel({
   );
 }
 
-// CTA-knappar + pris (SerpAPI offers)
+// CTA-knappar (utan pris)
 function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
   const q = encodeURIComponent(p?.name ?? "");
   const v = offers?.vendors ?? {};
@@ -183,9 +183,8 @@ function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
 
   const add = (vendor: "amazon" | "currys" | "argos" | "ao", label: string, fallback: string) => {
     const url = v[vendor]?.url ?? p?.links?.[vendor] ?? p?.[`${vendor}Url`] ?? fallback;
-    const price = v[vendor]?.price;
-    const priceTxt = typeof price === "number" ? ` ${GBP.format(price)}` : "";
-    buttons.push({ label: `${label}${priceTxt}`, href: url });
+    // Pris hämtas men används inte i knapptexten
+    buttons.push({ label, href: url });
   };
 
   add("amazon", "Buy at Amazon", `https://www.amazon.co.uk/s?k=${q}`);
@@ -195,6 +194,7 @@ function retailButtons(p: any, offers?: import("@/app/lib/serpapi").Offers) {
 
   return buttons;
 }
+
 
 function keyFor(p: any) {
   return [p.brand, p.model, p.name, p.ean, p.asin].filter(Boolean).join("|").toLowerCase();
