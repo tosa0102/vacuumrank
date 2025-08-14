@@ -18,7 +18,9 @@ export async function fetchProductSpecs({
 
   const brandKey = brand.toLowerCase();
   const sources = brandSources[brandKey] ?? [];
-  const queries = [`${brand} ${model} site:${sources.join(" OR site:")}`];
+  const queries = sources.length
+    ? [`${brand} ${model} site:${sources.join(" OR site:")}`]
+    : [`${brand} ${model}`];
 
   // Först: försök tillverkarens egna whitelistasidor
   let specs = await searchAndExtractSpecs({ queries, fields: specFieldMap });
@@ -38,8 +40,8 @@ export async function fetchProductSpecs({
     fields: specFieldMap,
   });
 
-  // Kombinera officiella + sekundära
-  specs = { ...secondarySpecs, ...specs }; // officiell tar företräde om fältet finns
+  // Kombinera officiella + sekundära (officiella tar företräde)
+  specs = { ...secondarySpecs, ...specs };
   return specs;
 }
 
